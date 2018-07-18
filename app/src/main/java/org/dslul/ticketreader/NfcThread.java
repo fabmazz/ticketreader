@@ -1,14 +1,19 @@
 package org.dslul.ticketreader;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
+import android.nfc.tech.IsoDep;
 import android.nfc.tech.NfcA;
 import android.os.Handler;
 import android.os.Message;
+import android.content.ClipboardManager;
+import android.util.Log;
 
 //import android.util.Log;
 
@@ -47,59 +52,111 @@ public class NfcThread extends Thread {
 	
 	public void run() {
 		final Tag tagFromIntent = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-		
-		if (scanAction == ACTION_NONE) {
-			showToastLong("Please select READ or WRITE before scanning tag");
-			return;
-		}
-		
-		final NfcA mfu = NfcA.get(tagFromIntent);
-		
-		if (mfu == null) {
-            showToastLong(context.getString(R.string.ticket_not_supported));
-			return;
-		}
-		
-		byte[] ATQA = mfu.getAtqa();
-		
-		if (mfu.getSak() != 0x00 || ATQA.length != 2 || ATQA[0] != 0x44 || ATQA[1] != 0x00) {
-			showToastLong(context.getString(R.string.ticket_not_supported));
-			return;
-		}
-		
-		int pagesRead;
-		
-		try {
-			//Log.i("position", "read data");
-			
-			if (scanAction == ACTION_READ) {
-				mfu.connect();
-				pagesRead = rdNumPages(mfu, 0); // 0 for no limit (until error)
-				mfu.close();
-				
-				String content = "";
-				byte[] mfuPage = new byte[4];
-				for (int i = 0; i < pagesRead * 4; i += 4) {
-					System.arraycopy(readBuffer, i, mfuPage, 0,  4);
-					content = content + ByteArrayToHexString(mfuPage) + System.getProperty("line.separator");
-				}
-				if(pagesRead >= 16) {
-					showToastShort(context.getString(R.string.ticket_correctly_read));
-					setTextBuffer(content);
-				} else {
-					showToastShort(context.getString(R.string.read_failure));
-					setTextBuffer("ERROR");
-				}
-			}
-		}
-		catch (Exception e) {
-			showToastLong(context.getString(R.string.communication_error));
-		}
+
+		if(tagFromIntent.getTechList()[0].equals(IsoDep.class.getName())) {
+            handleIsoDep(tagFromIntent);
+        } else {
+            handleNfcA(tagFromIntent);
+        }
 	}
+
+
+	private void handleIsoDep(Tag tagFromIntent) {
+	    IsoDep isoDep = IsoDep.get(tagFromIntent);
+	    if (isoDep != null) {
+            try {
+                isoDep.connect();
+
+                byte[] getinfo = {0x00, (byte)0xa4, 0x00, 0x00, 0x02, 0x20, 0x01};
+                isoDep.transceive(getinfo);
+                byte[] read = {0x00, (byte)0xb2, 0x01, 0x05};
+                byte[] info = isoDep.transceive(read);
+                byte[] gettickets = {0x00, (byte)0xa4, 0x00, 0x00, 0x02, 0x20, 0x20};
+                isoDep.transceive(gettickets);
+                byte[] tickets = isoDep.transceive(read);
+
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
+                outputStream.write(info);
+                outputStream.write(tickets);
+                byte content[] = outputStream.toByteArray();
+                byte err[] = {(byte)0xFF};
+
+                //TODO: throw exception
+                if(info.length < 30 ||  info[3] == 0) {
+                    showToastLong(context.getString(R.string.invalid_smartcard));
+                    setTextBuffer(err);
+                } else {
+                    setTextBuffer(content);
+                    showToastLong(context.getString(R.string.smartcard_read_correctly));
+                }
+
+                isoDep.close();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+	private void handleNfcA(Tag tagFromIntent) {
+        if (scanAction == ACTION_NONE) {
+            showToastLong("Please select READ or WRITE before scanning tag");
+            return;
+        }
+
+        final NfcA mfu = NfcA.get(tagFromIntent);
+
+        if (mfu == null) {
+            showToastLong(context.getString(R.string.ticket_not_supported));
+            return;
+        }
+
+        byte[] ATQA = mfu.getAtqa();
+
+        if (mfu.getSak() != 0x00 || ATQA.length != 2 || ATQA[0] != 0x44 || ATQA[1] != 0x00) {
+            showToastLong(context.getString(R.string.ticket_not_supported));
+            return;
+        }
+
+        int pagesRead;
+
+        try {
+            //Log.i("position", "read data");
+
+            if (scanAction == ACTION_READ) {
+                mfu.connect();
+                pagesRead = rdNumPages(mfu, 0); // 0 for no limit (until error)
+                mfu.close();
+
+                byte[] content = new byte[pagesRead*4];
+                System.arraycopy(readBuffer, 0, content, 0, pagesRead*4);
+                /*
+                String content = "";
+                byte[] mfuPage = new byte[4];
+                for (int i = 0; i < pagesRead*4; i += 4) {
+                    System.arraycopy(readBuffer, i, mfuPage, 0,  4);
+                    content = content + ByteArrayToHexString(mfuPage) + System.getProperty("line.separator");
+                }*/
+                if(pagesRead >= 16 && content.length >= 16*4) {
+                    showToastShort(context.getString(R.string.ticket_correctly_read));
+                    setTextBuffer(content);
+                } else {
+                    showToastShort(context.getString(R.string.read_failure));
+                    //TODO: throw error instead
+                    byte[] error = {(byte)0xFF};
+                    setTextBuffer(error);
+                }
+            }
+        }
+        catch (Exception e) {
+            showToastLong(context.getString(R.string.communication_error));
+        }
+    }
 	
-	private void setTextBuffer(String text) {
+	private void setTextBuffer(byte[] content) {
 		Message msg = new Message();
-		msg.obj = text;
+		msg.obj = content;
 		mTextBufferHandler.sendMessage(msg);
 	}
 	
@@ -255,6 +312,17 @@ public class NfcThread extends Thread {
 		}
 		return errors;
 	}
+
+    private byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i+1), 16));
+        }
+        return data;
+    }
+
 	
 	private boolean notHex(byte inchar) {
 		if (inchar >= '0' && inchar <= '9') return false;

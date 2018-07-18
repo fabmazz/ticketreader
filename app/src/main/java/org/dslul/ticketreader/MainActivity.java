@@ -1,29 +1,22 @@
 package org.dslul.ticketreader;
 
+import android.annotation.SuppressLint;
+import android.nfc.tech.IsoDep;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.TableLayout;
 import android.widget.TextView;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.concurrent.TimeUnit;
-import android.content.ClipboardManager;
-import android.content.ClipData;
-import android.content.Context;
 
 import android.nfc.NfcAdapter;
 import android.nfc.tech.NfcA;
@@ -58,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
 	private Toast currentToast;
 
-	private String pages = "ERROR";
+	private byte[] pages = {(byte)0xFF};
 
     private AdView adview;
     private ImageView imageNfc;
@@ -68,7 +61,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView statoBiglietto;
     private TextView infoLabel;
 	private TableLayout infoTable;
-	private TextView dataObliterazione;
+	private TextView tipologia;
+    private TextView dataLabel;
+    private TextView dataObliterazione;
 	private TextView corseRimanenti;
 
 	private CountDownTimer timer;
@@ -79,10 +74,13 @@ public class MainActivity extends AppCompatActivity {
 
     // list of NFC technologies detected:
 	private final String[][] techListsArray = new String[][] {
-		new String[] {
-			//MifareUltralight.class.getName(),
-			NfcA.class.getName()
-		}
+            new String[] {
+                //MifareUltralight.class.getName(),
+                NfcA.class.getName()
+            },
+            new String[] {
+                IsoDep.class.getName()
+            }
 	};
 
 
@@ -101,10 +99,12 @@ public class MainActivity extends AppCompatActivity {
         statoBiglietto = (TextView) findViewById(R.id.stato_biglietto);
         infoLabel = (TextView) findViewById(R.id.infolabel);
         infoTable = (TableLayout) findViewById(R.id.info_table);
+		tipologia = (TextView) findViewById(R.id.tipologia);
+        dataLabel = (TextView) findViewById(R.id.validation_or_expire);
         dataObliterazione = (TextView) findViewById(R.id.data_obliterazione);
         corseRimanenti = (TextView) findViewById(R.id.corse_rimaste);
 
-        MobileAds.initialize(this, "ca-app-pub-3940256099942544/6300978111");
+        MobileAds.initialize(this, "ca-app-pub-2102716674867426~1964394961");
         AdRequest adRequest = new AdRequest.Builder().build();
         adview.loadAd(adRequest);
 
@@ -159,54 +159,58 @@ public class MainActivity extends AppCompatActivity {
 		}
     }
 
+	@SuppressLint("HandlerLeak")
 	private Handler mTextBufferHandler = new Handler() {
 		public void handleMessage(Message msg) {
-			pages = (String)msg.obj;
-            if(timer != null)
-                timer.cancel();
-            if(pages != "ERROR") {
-                Parser parser = new Parser(pages);
-				dataObliterazione.setText(parser.getDate());
-				corseRimanenti.setText(Integer.toString(parser.getRemainingRides()));
+			pages = (byte[])msg.obj;
 
-                if(parser.getRemainingMinutes() != 0) {
-                    statoBiglietto.setText(R.string.in_corso);
-                    statusImg.setImageResource(R.drawable.ic_restore_grey_800_36dp);
-                    statusCard.setCardBackgroundColor(0xFF90CAF9);
-                    Calendar calendar = Calendar.getInstance();
-                    int sec = calendar.get(Calendar.SECOND);
-                    timer = new CountDownTimer((parser.getRemainingMinutes()*60 - sec)*1000, 1000) {
+			if(timer != null)
+				timer.cancel();
 
-                        public void onTick(long millis) {
-                            statoBiglietto.setText(String.format(getResources().getString(R.string.in_corso),
-                                    TimeUnit.MILLISECONDS.toMinutes(millis),
-                                    TimeUnit.MILLISECONDS.toSeconds(millis) -
-                                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis))));
-                        }
+			//smartcard
+			if(pages.length > 200) {
+				/*
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("content", pages);
+                clipboard.setPrimaryClip(clip);
+				*/
+				SmartCard smartcard = new SmartCard(pages, getBaseContext());
+				if(smartcard.isSubscription()) {
+					dataLabel.setText(R.string.expire_date);
+					tipologia.setText(smartcard.getName());
+					dataObliterazione.setText(smartcard.getDate());
 
-                        public void onFinish() {
-                            statoBiglietto.setText(R.string.corse_esaurite);
-                            statusImg.setImageResource(R.drawable.ic_error_grey_800_36dp);
-                            statusCard.setCardBackgroundColor(0xFFEF9A9A);
-            				if(timer != null)
-                            	timer.cancel();
-                        }
+					if(smartcard.isExpired()) {
+						corseRimanenti.setText("0");
+						statoBiglietto.setText(R.string.expired);
+						statusImg.setImageResource(R.drawable.ic_error_grey_800_36dp);
+						statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorRed));
+					} else {
+						corseRimanenti.setText(R.string.unlimited);
+						statoBiglietto.setText(R.string.valid);
+						statusImg.setImageResource(R.drawable.ic_check_circle_grey_800_36dp);
+						statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorGreen));
+					}
 
-                        }.start();
-                } else if(parser.getRemainingRides() == 0 && parser.getRemainingMinutes() == 0) {
-                    statoBiglietto.setText(R.string.corse_esaurite);
-                    statusImg.setImageResource(R.drawable.ic_error_grey_800_36dp);
-                    statusCard.setCardBackgroundColor(0xFFEF9A9A);
-                } else if(parser.getRemainingRides() != 0 && parser.getRemainingMinutes() == 0) {
-                    statoBiglietto.setText(String.format(getResources().getString(R.string.corse_disponibili), parser.getRemainingRides()));
-                    statusImg.setImageResource(R.drawable.ic_check_circle_grey_800_36dp);
-                    statusCard.setCardBackgroundColor(0xFFA5D6A7);
-                }
+					statusCard.setVisibility(View.VISIBLE);
+					ticketCard.setVisibility(View.VISIBLE);
+					infoLabel.setText(R.string.read_another_ticket);
+					imageNfc.setVisibility(View.GONE);
+				} else {
+					//createTicketInterface(smartcard.getName(),smartcard.getDate(),
+					//		smartcard.getRemainingRides(), 0);
+					Toast.makeText(getBaseContext(), R.string.smartcard_tickets_not_supported_yet, Toast.LENGTH_LONG).show();
 
-                statusCard.setVisibility(View.VISIBLE);
-                ticketCard.setVisibility(View.VISIBLE);
-				infoLabel.setText(R.string.read_another_ticket);
-                imageNfc.setVisibility(View.GONE);
+				}
+
+
+            }
+            //chip on paper
+            else if(pages.length > 2) {
+
+				ChipOnPaper chipOnPaper = new ChipOnPaper(pages);
+				createTicketInterface(chipOnPaper.getTypeName(),chipOnPaper.getDate(),
+								chipOnPaper.getRemainingRides(), chipOnPaper.getRemainingMinutes());
 
 
             } else {
@@ -217,6 +221,60 @@ public class MainActivity extends AppCompatActivity {
 			}
 		}
 	};
+
+
+
+    private void createTicketInterface(String name, String date, int remainingRides, long remainingMinutes) {
+        dataLabel.setText(R.string.data_obliterazione);
+		tipologia.setText(name);
+		dataObliterazione.setText(date);
+		corseRimanenti.setText(Integer.toString(remainingRides));
+
+		if(remainingMinutes != 0) {
+			statoBiglietto.setText(R.string.in_corso);
+			statusImg.setImageResource(R.drawable.ic_restore_grey_800_36dp);
+			statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorBlue));
+			Calendar calendar = Calendar.getInstance();
+			int sec = calendar.get(Calendar.SECOND);
+			timer = new CountDownTimer((remainingMinutes*60 - sec)*1000, 1000) {
+
+				public void onTick(long millis) {
+					statoBiglietto.setText(String.format(getResources().getString(R.string.in_corso),
+							TimeUnit.MILLISECONDS.toMinutes(millis),
+							TimeUnit.MILLISECONDS.toSeconds(millis) -
+									TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis))));
+				}
+
+				public void onFinish() {
+					statoBiglietto.setText(R.string.corse_esaurite);
+					statusImg.setImageResource(R.drawable.ic_error_grey_800_36dp);
+					statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorRed));
+					if(timer != null)
+						timer.cancel();
+				}
+
+			}.start();
+		} else if(remainingRides == 0 && remainingMinutes == 0) {
+			statoBiglietto.setText(R.string.corse_esaurite);
+			statusImg.setImageResource(R.drawable.ic_error_grey_800_36dp);
+			statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorRed));
+		} else if(remainingRides != 0 && remainingMinutes == 0) {
+			statoBiglietto.setText(String.format(getResources().getString(R.string.corse_disponibili), remainingRides));
+			statusImg.setImageResource(R.drawable.ic_check_circle_grey_800_36dp);
+			statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorGreen));
+		}
+
+		statusCard.setVisibility(View.VISIBLE);
+		ticketCard.setVisibility(View.VISIBLE);
+		infoLabel.setText(R.string.read_another_ticket);
+		imageNfc.setVisibility(View.GONE);
+	}
+
+
+
+
+
+
 
 	private Handler mToastShortHandler = new Handler() {
 		public void handleMessage(Message msg) {

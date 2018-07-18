@@ -135,12 +135,36 @@
             android:shrinkColumns="1" >
 
             <TableRow
+                android:id="@+id/row_type"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="5dp" >
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tipologia:"
+                    android:textColor="#222"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tipologia"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingLeft="7dp"
+                    android:textColor="#222"
+                    android:textSize="12sp" />
+            </TableRow>
+
+            <TableRow
                 android:id="@+id/row_date"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="5dp" >
 
                 <TextView
+                    android:id="@+id/validation_or_expire"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/data_obliterazione"
