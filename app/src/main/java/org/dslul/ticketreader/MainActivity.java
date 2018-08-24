@@ -199,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
 				} else {
 					createTicketInterface(smartcard.getName(),smartcard.getDate(),
 							smartcard.getRemainingRides(), 0);
-					//Toast.makeText(getBaseContext(), R.string.smartcard_tickets_not_supported_yet, Toast.LENGTH_LONG).show();
+					Toast.makeText(getBaseContext(), R.string.smartcard_tickets_not_supported_yet, Toast.LENGTH_LONG).show();
 
 				}
 
