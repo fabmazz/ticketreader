@@ -197,16 +197,16 @@ public class MainActivity extends AppCompatActivity {
 					infoLabel.setText(R.string.read_another_ticket);
 					imageNfc.setVisibility(View.GONE);
 				} else {
-					//createTicketInterface(smartcard.getName(),smartcard.getDate(),
-					//		smartcard.getRemainingRides(), 0);
-					Toast.makeText(getBaseContext(), R.string.smartcard_tickets_not_supported_yet, Toast.LENGTH_LONG).show();
+					createTicketInterface(smartcard.getName(),smartcard.getDate(),
+							smartcard.getRemainingRides(), 0);
+					//Toast.makeText(getBaseContext(), R.string.smartcard_tickets_not_supported_yet, Toast.LENGTH_LONG).show();
 
 				}
 
 
             }
             //chip on paper
-            else if(pages.length > 2) {
+            else if(pages.length > 48) {
 
 				ChipOnPaper chipOnPaper = new ChipOnPaper(pages);
 				createTicketInterface(chipOnPaper.getTypeName(),chipOnPaper.getDate(),

@@ -23,6 +23,7 @@ public class SmartCard {
     }
 
     static final Map<Integer, String> subscriptionCodes = new HashMap<Integer, String>() {{
+        put(68, "Mensile UNDER 26");
         put(72, "Mensile Studenti Rete Urbana");
 
         put(101, "Settimanale Formula 1");
@@ -51,8 +52,29 @@ public class SmartCard {
         put(290, "Mensile 65+ Urbano Orario Ridotto");
         put(291, "Mensile 65+ Urbano");
 
+        put(307, "Annuale Ivrea Rete Urbana e Dintorni");
+        put(308, "Annuale Extraurbano O/D");
+        put(310, "Plurimensile Studenti Extraurbano O/D");
+
+        put(721, "Annuale UNDER 26");
+        put(722, "Annuale UNDER 26 Fascia A");
+        put(723, "Annuale UNDER 26 Fascia B");
+        put(724, "Annuale UNDER 26 Fascia C");
+
+        put(730, "Mensile urbano Over 65");
+        put(761, "Annuale Over A");
+        put(731, "Annuale Over B");
+        put(732, "Annuale Over C");
+        put(733, "Annuale Over D");
+
         put(911, "10 Mesi Studenti");
         put(912, "Annuale Studenti");
+
+        put(990, "Junior");
+
+        put(993, "Annuale Formula U");
+        put(4003, "Annuale Formula U a Zone");
+
     }};
 
     static final Map<Integer, String> ticketCodes = new HashMap<Integer, String>() {{
@@ -154,7 +176,7 @@ public class SmartCard {
     private Date creationDate;
     private Type type;
     private List<Item> items = new ArrayList<>();
-    private boolean isSubscription;
+    private boolean isSubscription = false;
     private Item lastItem;
     private int ridesLeft = 0;
 
@@ -185,6 +207,8 @@ public class SmartCard {
             if(item.isValid()) {
                 if(lastExpireDate.before(item.getEndDate())) {
                     lastExpireDate = item.getEndDate();
+                    if(item.isSubscription())
+                        isSubscription = true;
                     lastItem = item;
                     if(item.isTicket()) {
                         ridesLeft += 1;
@@ -192,7 +216,7 @@ public class SmartCard {
                     }
 
                 }
-                isSubscription = item.isSubscription();
+                //isSubscription = item.isSubscription();
 
                 items.add(item);
             }
