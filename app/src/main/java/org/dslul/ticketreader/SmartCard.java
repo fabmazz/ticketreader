@@ -178,6 +178,8 @@ public class SmartCard {
     private List<Item> items = new ArrayList<>();
     private boolean isSubscription = false;
     private Item lastItem;
+
+    private String subscriptionName;
     private int ridesLeft = 0;
 
 
@@ -207,11 +209,17 @@ public class SmartCard {
             if(item.isValid()) {
                 if(lastExpireDate.before(item.getEndDate())) {
                     lastExpireDate = item.getEndDate();
-                    if(item.isSubscription())
-                        isSubscription = true;
                     lastItem = item;
+                    if(item.isSubscription()) {
+                        isSubscription = true;
+                        subscriptionName = item.getTypeName();
+                        if(!isExpired(item.getEndDate()))
+                            break;
+                    }
                     if(item.isTicket()) {
                         ridesLeft += 1;
+                        if(isExpired(lastItem.getEndDate()))
+                            isSubscription = false;
                         //TODO: count tickets in daily 7 carnets
                     }
 
@@ -231,6 +239,10 @@ public class SmartCard {
         return type + " - " + lastItem.getTypeName();
     }
 
+    public String getSubscriptionName() {
+        return type + " - " + subscriptionName;
+    }
+
     public String getDate() {
         return DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT)
                 .format(lastItem.getEndDate());
@@ -239,6 +251,11 @@ public class SmartCard {
     public boolean isExpired() {
         Calendar c = Calendar.getInstance();
         return c.getTime().after(lastItem.getEndDate());
+    }
+
+    private boolean isExpired(Date date) {
+        Calendar c = Calendar.getInstance();
+        return c.getTime().after(date);
     }
 
     public int getRemainingRides() {

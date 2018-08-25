@@ -81,6 +81,9 @@ public class NfcThread extends Thread {
                 byte content[] = outputStream.toByteArray();
                 byte err[] = {(byte)0xFF};
 
+                //override
+                //content = hexStringToByteArray("");
+
                 //TODO: throw exception
                 if(info.length < 30 ||  info[3] == 0) {
                     showToastLong(context.getString(R.string.invalid_smartcard));

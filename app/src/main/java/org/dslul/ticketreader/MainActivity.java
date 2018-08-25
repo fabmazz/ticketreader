@@ -177,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
 				SmartCard smartcard = new SmartCard(pages, getBaseContext());
 				if(smartcard.isSubscription()) {
 					dataLabel.setText(R.string.expire_date);
-					tipologia.setText(smartcard.getName());
+					tipologia.setText(smartcard.getSubscriptionName());
 					dataObliterazione.setText(smartcard.getDate());
 
 					if(smartcard.isExpired()) {
