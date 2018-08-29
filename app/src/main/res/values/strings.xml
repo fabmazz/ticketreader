@@ -15,7 +15,7 @@
     <string name="nfc_disabled">NFC disabled. Activate NFC and press the back button.</string>
     <string name="information">Information</string>
     <string name="close_dialog">Close</string>
-    <string name="info_message">Simple opensource application to view the remaining trips in GTT tickets.\n\nhttps://github.com/dslul/ticketreader\n\nIcons: Card Paypass by Viktor Vorobyev from the Noun Project; samsung galaxy by Setyo Ari Wibowo from the Noun Project</string>
+    <string name="html_info"><![CDATA[<p>Simple opensource application to view the remaining trips in GTT tickets.<br>If you encounter any problem with this app, feel free to contact me at <a href="mailto:daniele.laudani@protonmail.com">this email address</a> describing your problem. Do not forget to paste the content of your ticket (this can be done by the menu).</p><p><a href="https://github.com/dslul/ticketreader">Project URL</a></b></p><p><b>Credits:</b></p><p>Icons: Card Paypass by Viktor Vorobyev from the Noun Project; samsung galaxy by Setyo Ari Wibowo from the Noun Project</p>]]></string>
     <string name="ticket_not_supported">Invalid ticket!</string>
     <string name="ticket_correctly_read">Ticket read correctly.</string>
     <string name="read_failure">Reading failed, try again</string>
@@ -27,4 +27,10 @@
     <string name="unlimited">Unlimited</string>
     <string name="valid">Valid</string>
     <string name="smartcard_tickets_not_supported_yet">Smartcards with tickets still not supported, stay tuned…</string>
+    <string name="send_feedback">Send feedback</string>
+    <string name="unknown_error">Unknown error, please contact the developer to solve this problem.</string>
+    <string name="copy_content">Copy content</string>
+    <string name="content_copied">Content successfully copied to clipboard</string>
+    <string name="no_content">No content to copy. Scan a ticket first</string>
+    <string name="smartcard_empty">This smartcard is still empty!</string>
 </resources>

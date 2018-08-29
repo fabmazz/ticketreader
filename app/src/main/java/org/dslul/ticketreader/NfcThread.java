@@ -1,9 +1,9 @@
 package org.dslul.ticketreader;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.nfc.NfcAdapter;
@@ -12,38 +12,27 @@ import android.nfc.tech.IsoDep;
 import android.nfc.tech.NfcA;
 import android.os.Handler;
 import android.os.Message;
-import android.content.ClipboardManager;
-import android.util.Log;
 
-//import android.util.Log;
+import static org.dslul.ticketreader.util.HelperFunctions.hexStringToByteArray;
 
-//code from http://www.emutag.com/soft.php
+
+//parts of code from http://www.emutag.com/soft.php
 
 public class NfcThread extends Thread {
-	private static final int ACTION_NONE  = 0;
-	private static final int ACTION_READ  = 1;
-	private static final int ACTION_WRITE = 2;
 
 	private Context context;
 	private Intent intent;
-	private int scanAction;
-	private String mTextBufferText;
-	private Handler mTextBufferHandler, mToastShortHandler, mToastLongHandler, mShowInfoDialogHandler;
+    private Handler mTextBufferHandler, mToastShortHandler, mToastLongHandler, mShowInfoDialogHandler;
 	
 	private byte[] readBuffer = new byte[1024]; // maximum theoretical capacity of MIFARE Ultralight
-	private byte[] toWriteBuffer = new byte[1024];
 	
 	NfcThread(
 			Context context,
 			Intent intent,
-			int scanAction,
-			String mTextBufferText,
 			Handler mTextBufferHandler, Handler mToastShortHandler, Handler mToastLongHandler, Handler mShowInfoDialogHandler
 			) {
 		this.context = context;
 		this.intent = intent;
-		this.scanAction = scanAction;
-		this.mTextBufferText = mTextBufferText;
 		this.mTextBufferHandler = mTextBufferHandler;
 		this.mToastShortHandler = mToastShortHandler;
 		this.mToastLongHandler = mToastLongHandler;
@@ -67,46 +56,60 @@ public class NfcThread extends Thread {
             try {
                 isoDep.connect();
 
-                byte[] getinfo = {0x00, (byte)0xa4, 0x00, 0x00, 0x02, 0x20, 0x01};
-                isoDep.transceive(getinfo);
-                byte[] read = {0x00, (byte)0xb2, 0x01, 0x05};
-                byte[] info = isoDep.transceive(read);
-                byte[] gettickets = {0x00, (byte)0xa4, 0x00, 0x00, 0x02, 0x20, 0x20};
-                isoDep.transceive(gettickets);
-                byte[] tickets = isoDep.transceive(read);
+                List<byte[]> dumplist = new ArrayList<>();
 
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
-                outputStream.write(info);
-                outputStream.write(tickets);
-                byte content[] = outputStream.toByteArray();
-                byte err[] = {(byte)0xFF};
+                //selectApplication
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00A404000E315449432E494341D38012009101")));
+                //efEnvironment
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B2013C1D")));
+                //efContractList
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B201F41D")));
+                //efContract1
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B2014C1D")));
+                //efContract2
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B2024C1D")));
+                //efContract3
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B2034C1D")));
+                //efContract4
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B2044C1D")));
+                //efContract5
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B2054C1D")));
+                //efContract6
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B2064C1D")));
+                //efContract7
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B2074C1D")));
+                //efContract8
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B2084C1D")));
+                //efEventLogs1
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B201441D")));
+                //efEventLogs2
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B202441D")));
+                //efEventLogs3
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B203441D")));
+                //efCredit
+                dumplist.add(isoDep.transceive(hexStringToByteArray("007C000721")));
 
-                //override
-                //content = hexStringToByteArray("");
-
-                //TODO: throw exception
-                if(info.length < 30 ||  info[3] == 0) {
-                    showToastLong(context.getString(R.string.invalid_smartcard));
-                    setTextBuffer(err);
-                } else {
-                    setTextBuffer(content);
+                if(dumplist.size() == 15 && dumplist.get(1)[0] != 0) {
+                    if(dumplist.get(2)[1] == 0) {
+                        showToastLong(context.getString(R.string.smartcard_empty));
+                        return;
+                    }
+                    setContentBuffer(dumplist);
                     showToastLong(context.getString(R.string.smartcard_read_correctly));
+                } else {
+                    showToastLong(context.getString(R.string.invalid_smartcard));
                 }
 
                 isoDep.close();
 
             } catch (IOException e) {
-                e.printStackTrace();
+                showToastLong(context.getString(R.string.read_failure));
             }
         }
     }
 
 
 	private void handleNfcA(Tag tagFromIntent) {
-        if (scanAction == ACTION_NONE) {
-            showToastLong("Please select READ or WRITE before scanning tag");
-            return;
-        }
 
         final NfcA mfu = NfcA.get(tagFromIntent);
 
@@ -123,41 +126,36 @@ public class NfcThread extends Thread {
         }
 
         int pagesRead;
+        List<byte[]> dumplist = new ArrayList<>();
 
         try {
-            //Log.i("position", "read data");
+            mfu.connect();
+            pagesRead = rdNumPages(mfu, 16); // 0 for no limit (until error)
+            mfu.close();
 
-            if (scanAction == ACTION_READ) {
-                mfu.connect();
-                pagesRead = rdNumPages(mfu, 0); // 0 for no limit (until error)
-                mfu.close();
-
-                byte[] content = new byte[pagesRead*4];
-                System.arraycopy(readBuffer, 0, content, 0, pagesRead*4);
-                /*
-                String content = "";
+            for (int i = 0; i < pagesRead*4; i += 4) {
                 byte[] mfuPage = new byte[4];
-                for (int i = 0; i < pagesRead*4; i += 4) {
-                    System.arraycopy(readBuffer, i, mfuPage, 0,  4);
-                    content = content + ByteArrayToHexString(mfuPage) + System.getProperty("line.separator");
-                }*/
-                if(pagesRead >= 16 && content.length >= 16*4) {
-                    showToastShort(context.getString(R.string.ticket_correctly_read));
-                    setTextBuffer(content);
-                } else {
-                    showToastShort(context.getString(R.string.read_failure));
-                    //TODO: throw error instead
-                    byte[] error = {(byte)0xFF};
-                    setTextBuffer(error);
-                }
+                System.arraycopy(readBuffer, i, mfuPage, 0,  4);
+                dumplist.add(mfuPage);
             }
+
+            if(pagesRead >= 16) {
+                showToastShort(context.getString(R.string.ticket_correctly_read));
+                setContentBuffer(dumplist);
+            } else {
+                throw new RuntimeException(context.getString(R.string.read_failure));
+            }
+
+        }
+        catch (RuntimeException e) {
+            showToastLong(context.getString(R.string.read_failure));
         }
         catch (Exception e) {
             showToastLong(context.getString(R.string.communication_error));
         }
     }
 	
-	private void setTextBuffer(byte[] content) {
+	private void setContentBuffer(List<byte[]> content) {
 		Message msg = new Message();
 		msg.obj = content;
 		mTextBufferHandler.sendMessage(msg);
@@ -180,165 +178,35 @@ public class NfcThread extends Thread {
 		msg.obj = text;
 		mShowInfoDialogHandler.sendMessage(msg);
 	}
-	
-	/*
-	private int rdAllPages(NfcA mfu) {
-		int pagesRead = 0;
-		while (rdPages(mfu, pagesRead) == 0) {
-			pagesRead += 4;
-			if (pagesRead == 256) break;
-		}
-		return pagesRead;
-	}
-	*/
-	
-	private int rdNumPages(NfcA mfu, int num) {
-		int pagesRead = 0;
-		
-		while (rdPages(mfu, pagesRead) == 0) {
-			pagesRead++;
-			if (pagesRead == num || pagesRead == 256) break;
-		}
-		return pagesRead;
-	}
-	
-	/*
-	private int rdNumPages(NfcA mfu, int num) {
-		int pagesRead = 0;
-		
-		// align number of pages to a multiple of 4
-		num += 3;
-		num >>>= 2; // unsigned shift
-		num <<= 2;
-		
-		while (rdPages(mfu, pagesRead) == 0) {
-			pagesRead += 4;
-			if (pagesRead == num || pagesRead == 256) break;
-		}
-		return pagesRead;
-	}
-	*/
+
+
+    private int rdNumPages(NfcA mfu, int num) {
+        int pagesRead = 0;
+
+        while (rdPages(mfu, pagesRead) == 0) {
+            pagesRead++;
+            if (pagesRead == num || pagesRead == 256) break;
+        }
+        return pagesRead;
+    }
 	
 	// first failure (NAK) causes response 0x00 (or possibly other 1-byte values)
 	// second failure (NAK) causes transceive() to throw IOException
 	private byte rdPages(NfcA tag, int pageOffset) {
 		byte[] cmd = {0x30, (byte)pageOffset};
 		byte[] response = new byte[16];
-		try { response = tag.transceive(cmd); }
-		catch (IOException e) { return 1; }
-		if (response.length != 16) return 1;
-		//System.arraycopy(response, 0, readBuffer, pageOffset * 4, 16);
+		try {
+		    response = tag.transceive(cmd);
+		}
+		catch (IOException e) {
+		    return 1;
+		}
+		if (response.length != 16)
+		    return 1;
+
 		System.arraycopy(response, 0, readBuffer, pageOffset * 4, 4);
 		return 0;
 	}
-	
-	// first failure (NAK) causes transceive() to throw IOException
-	/*
-	private byte wrPage(NfcA tag, int pageOffset) {
-		byte[] cmd = {(byte)0xA2, (byte)pageOffset, 0x00, 0x00, 0x00, 0x00};
-		System.arraycopy(toWriteBuffer, pageOffset * 4, cmd, 2, 4);
-		try {
-			Log.i("TRANS START", Integer.toString(pageOffset));
-			tag.transceive(cmd);
-			Log.i("TRANS END", Integer.toString(pageOffset));
-		}
-		catch (IOException e) { return 1; }
-		return 0;
-	}
-	*/
-	
-	private byte wrPage(NfcA mfu, int pageOffset) {
-		byte[] cmd = {(byte)0xA2, (byte)pageOffset, 0x00, 0x00, 0x00, 0x00};
-		System.arraycopy(toWriteBuffer, pageOffset * 4, cmd, 2, 4);
-		//byte[] data = {0x00, 0x00, 0x00, 0x00};
-		//System.arraycopy(toWriteBuffer, pageOffset * 4, data, 0, 4);
-		//byte errors = 0;
-		
-		//final MifareUltralight mfu = MifareUltralight.get(tag);
-		
-		try {
-			//mfu.connect();
-			//Log.i("TRANS START", Integer.toString(pageOffset));
-			//mfu.writePage(pageOffset, data);
-			mfu.transceive(cmd);
-			//Log.i("TRANS END", Integer.toString(pageOffset));
-			//mfu.close();
-		}
-		catch (final IOException e) { return 1; }
-		/*
-		finally {
-			try { mfu.close(); }
-			catch (final Exception e) {}
-		}
-		*/
-		
-		return 0;
-	}
-	
-	// first failure (NAK) causes transceive() to throw IOException
-	private byte wrPageCompat(NfcA tag, int pageOffset) {
-		byte[] cmd1 = {(byte)0xA0, (byte)pageOffset};
-		byte[] cmd2 = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-		System.arraycopy(toWriteBuffer, pageOffset * 4, cmd2, 0, 4);
-		try {
-			tag.transceive(cmd1);
-			tag.transceive(cmd2);
-		}
-		catch (IOException e) { return 1; }
-		return 0;
-	}
-	
-	private String ByteArrayToHexString(byte[] inarray) {
-		int i, j, in;
-		String [] hex = {"0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"};
-		String out= "";
-		for(j = 0 ; j < inarray.length ; ++j) {
-			in = (int) inarray[j] & 0xff;
-			i = (in >> 4) & 0x0f;
-			out += hex[i];
-			i = in & 0x0f;
-			out += hex[i];
-		}
-		return out;
-	}
-	
-	private int HexStringToByteArray(String instring, byte[] outarray, int outoffset) {
-		int errors = 0;
-		byte[] nibbles = new byte[2];
-		for (int i = 0; i < instring.length(); i += 2) {
-			nibbles[0] = (byte)instring.charAt(i+0);
-			nibbles[1] = (byte)instring.charAt(i+1);
-			if (notHex(nibbles[0])) errors = 1;
-			if (notHex(nibbles[1])) errors = 1;
-			outarray[outoffset] = (byte)((hex2bin(nibbles[0]) << 4) | hex2bin(nibbles[1]));
-			outoffset++;
-		}
-		return errors;
-	}
 
-    private byte[] hexStringToByteArray(String s) {
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i+1), 16));
-        }
-        return data;
-    }
-
-	
-	private boolean notHex(byte inchar) {
-		if (inchar >= '0' && inchar <= '9') return false;
-		if (inchar >= 'a' && inchar <= 'f') return false;
-		if (inchar >= 'A' && inchar <= 'F') return false;
-		return true;
-	}
-	
-	private byte hex2bin(byte inchar) {
-		if (inchar > 'Z') inchar -= ' ';
-		if (inchar > '9') inchar -= 7;
-		inchar &= 0x0f;
-		return inchar;
-	}
 }
 

@@ -1,12 +1,18 @@
 package org.dslul.ticketreader;
 
 import android.annotation.SuppressLint;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.nfc.tech.IsoDep;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,6 +22,7 @@ import android.widget.TableLayout;
 import android.widget.TextView;
 
 import java.util.Calendar;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import android.nfc.NfcAdapter;
@@ -38,6 +45,11 @@ import android.content.DialogInterface;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
+import com.yarolegovich.lovelydialog.LovelyCustomDialog;
+import com.yarolegovich.lovelydialog.LovelyInfoDialog;
+import com.yarolegovich.lovelydialog.LovelyStandardDialog;
+
+import org.dslul.ticketreader.util.HelperFunctions;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -50,8 +62,6 @@ public class MainActivity extends AppCompatActivity {
 	private AlertDialog alertDialog;
 
 	private Toast currentToast;
-
-	private byte[] pages = {(byte)0xFF};
 
     private AdView adview;
     private ImageView imageNfc;
@@ -68,9 +78,7 @@ public class MainActivity extends AppCompatActivity {
 
 	private CountDownTimer timer;
 
-    private static final int ACTION_NONE  = 0;
-	private static final int ACTION_READ  = 1;
-	private int scanAction;
+	private List<byte[]> dump;
 
     // list of NFC technologies detected:
 	private final String[][] techListsArray = new String[][] {
@@ -126,8 +134,6 @@ public class MainActivity extends AppCompatActivity {
 		//FLAG_ACTIVITY_REORDER_TO_FRONT FLAG_RECEIVER_REPLACE_PENDING
 		pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
-		scanAction = ACTION_READ;
-
         onNewIntent(getIntent());
 
     }
@@ -150,76 +156,75 @@ public class MainActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
 		if (intent.getAction().equals(NfcAdapter.ACTION_TECH_DISCOVERED)) {
 
-			String mTextBufferText = "aa";
-
-			NfcThread nfcThread = new NfcThread(getBaseContext(), intent, scanAction, mTextBufferText, mTextBufferHandler, mToastShortHandler, mToastLongHandler, mShowInfoDialogHandler);
+			NfcThread nfcThread = new NfcThread(getBaseContext(), intent, mContentHandler, mToastShortHandler, mToastLongHandler, mShowInfoDialogHandler);
 			nfcThread.start();
-
-			scanAction = ACTION_READ;
 		}
     }
 
 	@SuppressLint("HandlerLeak")
-	private Handler mTextBufferHandler = new Handler() {
+	private Handler mContentHandler = new Handler() {
 		public void handleMessage(Message msg) {
-			pages = (byte[])msg.obj;
+			List dumplist = (List<byte[]>)msg.obj;
+            dump = dumplist;
 
 			if(timer != null)
 				timer.cancel();
 
-			//smartcard
-			if(pages.length > 200) {
-				/*
-                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("content", pages);
-                clipboard.setPrimaryClip(clip);
-				*/
-				SmartCard smartcard = new SmartCard(pages, getBaseContext());
-				if(smartcard.isSubscription()) {
-					dataLabel.setText(R.string.expire_date);
-					tipologia.setText(smartcard.getSubscriptionName());
-					dataObliterazione.setText(smartcard.getDate());
+			try {
+                //smartcard
+                if(dumplist.size() == 15) {
+                    SmartCard smartcard = new SmartCard(dumplist, getBaseContext());
+                    if(smartcard.isSubscription()) {
+                        dataLabel.setText(R.string.expire_date);
+                        tipologia.setText(smartcard.getSubscriptionName());
+                        dataObliterazione.setText(smartcard.getDate());
 
-					if(smartcard.isExpired()) {
-						corseRimanenti.setText("0");
-						statoBiglietto.setText(R.string.expired);
-						statusImg.setImageResource(R.drawable.ic_error_grey_800_36dp);
-						statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorRed));
-					} else {
-						corseRimanenti.setText(R.string.unlimited);
-						statoBiglietto.setText(R.string.valid);
-						statusImg.setImageResource(R.drawable.ic_check_circle_grey_800_36dp);
-						statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorGreen));
-					}
+                        if(smartcard.isExpired()) {
+                            corseRimanenti.setText("0");
+                            statoBiglietto.setText(R.string.expired);
+                            statusImg.setImageResource(R.drawable.ic_error_grey_800_36dp);
+                            statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorRed));
+                        } else {
+                            corseRimanenti.setText(R.string.unlimited);
+                            statoBiglietto.setText(R.string.valid);
+                            statusImg.setImageResource(R.drawable.ic_check_circle_grey_800_36dp);
+                            statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorGreen));
+                        }
 
-					statusCard.setVisibility(View.VISIBLE);
-					ticketCard.setVisibility(View.VISIBLE);
-					infoLabel.setText(R.string.read_another_ticket);
-					imageNfc.setVisibility(View.GONE);
-				} else {
-					createTicketInterface(smartcard.getName(),smartcard.getDate(),
-							smartcard.getRemainingRides(), 0);
-					Toast.makeText(getBaseContext(), R.string.smartcard_tickets_not_supported_yet, Toast.LENGTH_LONG).show();
+                        statusCard.setVisibility(View.VISIBLE);
+                        ticketCard.setVisibility(View.VISIBLE);
+                        infoLabel.setText(R.string.read_another_ticket);
+                        imageNfc.setVisibility(View.GONE);
+                    } else {
+                        createTicketInterface(smartcard.getName(),smartcard.getValidationDate(),
+                                smartcard.getRemainingRides(), smartcard.getRemainingMinutes());
+                        //Toast.makeText(getBaseContext(), R.string.smartcard_tickets_not_supported_yet, Toast.LENGTH_LONG).show();
 
-				}
+                    }
 
 
+                }
+                //chip on paper
+                else if(dumplist.size() > 15) {
+
+                    ChipOnPaper chipOnPaper = new ChipOnPaper(dumplist);
+                    createTicketInterface(chipOnPaper.getTypeName(),chipOnPaper.getDate(),
+                                    chipOnPaper.getRemainingRides(), chipOnPaper.getRemainingMinutes());
+
+
+                } else {
+                    statusCard.setVisibility(View.GONE);
+                    ticketCard.setVisibility(View.GONE);
+                    infoLabel.setText(R.string.info_instructions);
+                    imageNfc.setVisibility(View.VISIBLE);
+                }
+
+            } catch (Exception ex) {
+                Toast.makeText(getBaseContext(), R.string.unknown_error, Toast.LENGTH_LONG).show();
+                Log.d("card", ex.getMessage());
             }
-            //chip on paper
-            else if(pages.length > 48) {
 
-				ChipOnPaper chipOnPaper = new ChipOnPaper(pages);
-				createTicketInterface(chipOnPaper.getTypeName(),chipOnPaper.getDate(),
-								chipOnPaper.getRemainingRides(), chipOnPaper.getRemainingMinutes());
-
-
-            } else {
-                statusCard.setVisibility(View.GONE);
-                ticketCard.setVisibility(View.GONE);
-                infoLabel.setText(R.string.info_instructions);
-                imageNfc.setVisibility(View.VISIBLE);
-			}
-		}
+        }
 	};
 
 
@@ -322,9 +327,40 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_info) {
-            alertDialog = showAlertDialog(getString(R.string.info_message));
-            alertDialog.show();
-			return true;
+            TextView view = new TextView(getBaseContext());
+            view.setText(Html.fromHtml(getString(R.string.html_info)));
+            view.setMovementMethod(LinkMovementMethod.getInstance());
+            view.setPadding( 40, 40, 40, 40 );
+            new LovelyCustomDialog(this)
+                    .setTopColorRes(R.color.darkBlueGrey)
+                    .setIcon(R.drawable.ic_info_outline_white_36dp)
+                    .setTitle("Info")
+                    .setView(view)
+                    .show();
+            return true;
+        }
+
+        if (id == R.id.action_copy_content) {
+            try {
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                String content = "";
+                if (dump != null && dump.size() >= 15) {
+                    for (byte[] page : dump) {
+                        content = content.concat(HelperFunctions.byteArrayToHexString(page));
+                    }
+                    ClipData clip = ClipData.newPlainText("content", content);
+                    if (clipboard != null) {
+                        clipboard.setPrimaryClip(clip);
+                    }
+                    Toast.makeText(getBaseContext(), R.string.content_copied, Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(getBaseContext(), R.string.no_content, Toast.LENGTH_LONG).show();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -336,7 +372,6 @@ public class MainActivity extends AppCompatActivity {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				alertDialog.cancel();
-				scanAction = ACTION_READ;
 			}
 		};
 
@@ -350,7 +385,6 @@ public class MainActivity extends AppCompatActivity {
 		alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
 
 			public void onCancel(DialogInterface dialog) {
-				scanAction = ACTION_READ;
 			}
 		});
 

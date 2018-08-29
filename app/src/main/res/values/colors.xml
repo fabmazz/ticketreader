@@ -6,4 +6,13 @@
     <color name="colorGreen">#FFA5D6A7</color>
     <color name="colorBlue">#FF90CAF9</color>
     <color name="colorRed">#FFEF9A9A</color>
+
+    <color name="indigo">#3F51B5</color>
+    <color name="teal">#009688</color>
+    <color name="darkDeepOrange">#E64A19</color>
+    <color name="darkGreen">#388E3C</color>
+    <color name="darkBlueGrey">#455A64</color>
+    <color name="darkRed">#D32F2F</color>
+    <color name="white">#FFFFFF</color>
+
 </resources>

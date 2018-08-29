@@ -3,35 +3,74 @@ package org.dslul.ticketreader;
 import android.util.Log;
 
 import org.dslul.ticketreader.util.GttDate;
+import org.dslul.ticketreader.util.HelperFunctions;
 
+import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import static org.dslul.ticketreader.util.GttDate.addMinutesToDate;
+import static org.dslul.ticketreader.util.HelperFunctions.getBytesFromPage;
 
 
 public class ChipOnPaper {
 
-    private String pages;
-    private String date;
+    private Date date;
     private int type;
     private long remainingMins;
+    private int remainingRides;
 
-    public ChipOnPaper(byte[] content) {
-        //if(data == null)
-        //TODO: convert this class to use bytes internally instead of strings
-        String contentstr = "";
-        byte[] page = new byte[4];
-        for (int i = 0; i < content.length; i += 4) {
-            System.arraycopy(content, i, page, 0,  4);
-            contentstr = contentstr + ByteArrayToHexString(page) + System.getProperty("line.separator");
+    ChipOnPaper(List<byte[]> dumplist) {
+
+        dumplist = dumplist;
+
+        type = (int)getBytesFromPage(dumplist.get(5), 2, 2);
+
+        long minutes = getBytesFromPage(dumplist.get(10), 0, 3);
+
+        if(type == 9521)
+            minutes = getBytesFromPage(dumplist.get(12), 0, 3);
+
+        date = addMinutesToDate(minutes, GttDate.getGttEpoch());
+
+        //calcola minuti rimanenti
+        Calendar c = Calendar.getInstance();
+        long diff = (c.getTime().getTime() - date.getTime()) / 60000;
+        long maxtime = 90;
+        //city 100
+        if(type == 302 || type == 304) {
+            maxtime = 100;
         }
-        this.pages = contentstr;
-        this.date = this.pages.substring(90, 96);
-        //this.type = (int)getBytesFromPage(5, 0, 1);
-        this.type = (int)getBytesFromPage(5, 2, 2);
+        //daily
+        if(type == 303 || type == 305) {
+            maxtime = GttDate.getMinutesUntilMidnight();
+        }
+        //Tour TODO: make a distinction between the two types
+        if(type == 704) {
+            maxtime = 2*24*60;
+        }
+        if(diff >= maxtime) {
+            remainingMins = 0;
+        } else {
+            remainingMins = maxtime - diff;
+        }
+
+        //calcola le corse rimanenti
+        //TODO: corse in metropolitana (forse bit più significativo pag. 3)
+        int tickets;
+        if(type == 300) { //extraurbano
+            tickets = (int) (~getBytesFromPage(dumplist.get(3), 0, 4));
+        } else {
+            tickets = (int)(~getBytesFromPage(dumplist.get(3), 2, 2))
+                    & 0xFFFF;
+        }
+        remainingRides = Integer.bitCount(tickets);
+
     }
 
     public String getTypeName() {
@@ -55,52 +94,21 @@ public class ChipOnPaper {
                 return "Carnet 15 corse";
             case 300:
                 return "Extraurbano";
+            case 9521:
+                return "Sadem Aeroporto Torino";
             default:
                 return "Non riconosciuto";
         }
     }
 
     public String getDate() {
-        Date finalDate = addMinutesToDate(Long.parseLong(this.date, 16), GttDate.getGttEpoch());
-
-        //calcola minuti rimanenti
-        Calendar c = Calendar.getInstance();
-        long diff = (c.getTime().getTime() - finalDate.getTime()) / 60000;
-        long maxtime = 90;
-        //city 100
-        if(type == 302 || type == 304) {
-            maxtime = 100;
-        }
-        //daily
-        if(type == 303 || type == 305) {
-            maxtime = GttDate.getMinutesUntilMidnight();
-        }
-        //Tour TODO: make a distinction between the two types
-        if(type == 704) {
-            maxtime = 2*24*60;
-        }
-        if(diff >= maxtime) {
-            remainingMins = 0;
-        } else {
-            remainingMins = maxtime - diff;
-        }
-
-
         return DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT)
-                .format(finalDate);
+                .format(date);
     }
 
 
-    //TODO: corse in metropolitana (forse bit più significativo pag. 3)
     public int getRemainingRides() {
-        int tickets;
-            if(type == 300) { //extraurbano
-                tickets = (int) (~getBytesFromPage(3, 0, 4));
-            } else {
-                    tickets = (int)(~getBytesFromPage(3, 2, 2))
-                                            & 0xFFFF;
-            }
-        return Integer.bitCount(tickets);
+        return remainingRides;
     }
 
 
@@ -109,45 +117,5 @@ public class ChipOnPaper {
     }
 
 
-
-    private long getBytesFromPage(int page, int offset, int bytesnum) {
-        return Long.parseLong(
-                pages.substring(9 * page + offset * 2, 9 * page + offset * 2 + bytesnum * 2), 16);
-    }
-
-
-
-    private static Date addMinutesToDate(long minutes, Date beforeTime){
-        final long ONE_MINUTE_IN_MILLIS = 60000;
-
-        long curTimeInMs = beforeTime.getTime();
-        Date afterAddingMins = new Date(curTimeInMs + (minutes * ONE_MINUTE_IN_MILLIS));
-        return afterAddingMins;
-    }
-
-
-    private static byte[] hexStringToByteArray(String s) {
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                                 + Character.digit(s.charAt(i+1), 16));
-        }
-        return data;
-    }
-
-    private String ByteArrayToHexString(byte[] inarray) {
-            int i, j, in;
-            String [] hex = {"0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"};
-            String out= "";
-            for(j = 0 ; j < inarray.length ; ++j) {
-                in = (int) inarray[j] & 0xff;
-                i = (in >> 4) & 0x0f;
-                out += hex[i];
-                i = in & 0x0f;
-                out += hex[i];
-            }
-            return out;
-    }
 
 }
