@@ -45,7 +45,7 @@
                     android:paddingLeft="15dp"
                     android:paddingRight="15dp"
                     android:text="@string/info_instructions"
-                    android:textColor="#757575"
+                    android:textColor="@color/colorGreyText"
                     android:textAlignment="center"
                     android:textSize="17sp"
                     android:textStyle="bold" />
@@ -120,7 +120,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="10dp"
             android:text="@string/dettagli_biglietto"
-            android:textColor="#757575"
+            android:textColor="@color/colorGreyText"
             android:textSize="16sp"
             android:textStyle="bold" />
 

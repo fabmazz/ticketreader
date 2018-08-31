@@ -7,6 +7,8 @@
     <color name="colorBlue">#FF90CAF9</color>
     <color name="colorRed">#FFEF9A9A</color>
 
+    <color name="colorGreyText">#515A66</color>
+
     <color name="indigo">#3F51B5</color>
     <color name="teal">#009688</color>
     <color name="darkDeepOrange">#E64A19</color>

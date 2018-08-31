@@ -1,7 +1,5 @@
 package org.dslul.ticketreader;
 
-import android.content.Context;
-
 import org.dslul.ticketreader.util.GttDate;
 
 import java.text.DateFormat;
@@ -13,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.lang.Math.abs;
+import static org.dslul.ticketreader.util.HelperFunctions.byteArrayToHexString;
 import static org.dslul.ticketreader.util.HelperFunctions.getBytesFromPage;
 
 
@@ -85,8 +84,6 @@ public class SmartCard {
         put(715, "Daily");
         put(716, "Multidaily");
     }};
-
-    Context context;
 
     private class Contract {
         private int code;
@@ -186,11 +183,12 @@ public class SmartCard {
     private long remainingMins;
 
 
-    SmartCard(List<byte[]> dumplist, Context context) {
-        this.context = context;
-
+    SmartCard(List<byte[]> dumplist) {
         efEnvironment = dumplist.get(1);
         byte[] efContractList = dumplist.get(2);
+        byte[] efEventLogs1 = dumplist.get(11);
+        byte[] efEventLogs2 = dumplist.get(12);
+        byte[] efEventLogs3 = dumplist.get(13);
 
         byte[] minutes = new byte[3];
         System.arraycopy(efEnvironment, 9, minutes, 0,  3);
@@ -232,21 +230,16 @@ public class SmartCard {
         }
 
         //actual tickets count
-        for (int i = 2; i < 29; i+=3) {
-            int num = abs(efContractList[i+1]) >> 4;
-            int used = efContractList[i+2];
-            if(num != 0 && num <= 8 && used == 0)
-                ridesLeft += 1;
-        }
+        ridesLeft = countTickets(efContractList, efEventLogs1, efEventLogs2, efEventLogs3);
 
 
         //get last validation time
-        long mins = getBytesFromPage(dumplist.get(11), 20, 3);
+        long mins = getBytesFromPage(efEventLogs1, 20, 3);
         validationDate = GttDate.addMinutesToDate(mins, GttDate.getGttEpoch());
         Calendar c = Calendar.getInstance();
         long diff = (c.getTime().getTime() - validationDate.getTime()) / 60000;
 
-        int num = (int)(getBytesFromPage(dumplist.get(11), 25, 1) >> 4);
+        int num = (int)(getBytesFromPage(efEventLogs1, 25, 1) >> 4);
         int tickettype = (int)getBytesFromPage(dumplist.get(num+2), 4, 2);
 
         long maxtime = 90;
@@ -265,6 +258,23 @@ public class SmartCard {
         }
 
 
+    }
+
+    private int countTickets(byte[] contractsList, byte[] evLogs1, byte[] evLogs2, byte[] evLogs3) {
+        int count = 0;
+        for (int i = 2; i < 24; i+=3) {
+            int num = abs(contractsList[i+1]) >> 4;
+            //int used = contractsList[i+2];
+            if(num != 0 && num <= 8 && (contractsList[i]&0x0f) != 0) {
+                int lognum1 = abs(evLogs1[25]) >> 4;
+                int lognum2 = abs(evLogs2[25]) >> 4;
+                int lognum3 = abs(evLogs3[25]) >> 4;
+                //TODO: find out how to count multi daily 7 tickets
+                if(num != lognum1 && num != lognum2 && num != lognum3)
+                    count += 1;
+            }
+        }
+        return count;
     }
 
 

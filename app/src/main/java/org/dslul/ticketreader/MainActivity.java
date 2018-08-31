@@ -173,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
 			try {
                 //smartcard
                 if(dumplist.size() == 15) {
-                    SmartCard smartcard = new SmartCard(dumplist, getBaseContext());
+                    SmartCard smartcard = new SmartCard(dumplist);
                     if(smartcard.isSubscription()) {
                         dataLabel.setText(R.string.expire_date);
                         tipologia.setText(smartcard.getSubscriptionName());
