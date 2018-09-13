@@ -76,7 +76,6 @@ public class ChipOnPaperUnitTest {
         list.add(hexStringToByteArray("60000234D95D6F5840000000000060004000004000000000234321E56A821000019000"));
         SmartCard smartcard = new SmartCard(list);
 
-
         assertEquals(3, smartcard.getRemainingRides());
 
         list.set(2, hexStringToByteArray("05012160014020014030014040014050012110012170012180000000009000"));
@@ -97,12 +96,41 @@ public class ChipOnPaperUnitTest {
         assertEquals(1, smartcard.getRemainingRides());
 
 
-        list.set(2, hexStringToByteArray("05012060014020014030014040014050012010012070012180000000009000"));
-        list.set(11, hexStringToByteArray("0501000000216DA6820004F800002A00000000006DA68200008000F9249000"));
-        list.set(12, hexStringToByteArray("0501000000216D9B2C0004F800002A00000000006D9B2C000060008D809000"));
-        list.set(13, hexStringToByteArray("0501000000216D959E0004F800002A00000000006D959E00001000674E9000"));
+        list.set(2, hexStringToByteArray("05012060014020014030014040014050012110012170012180000000009000"));
+        list.set(11, hexStringToByteArray("0501000000216D9B2C0004F800002A00000000006D9B2C000060008D809000"));
+        list.set(12, hexStringToByteArray("0501000000216D959E0004F800002A00000000006D959E00001000674E9000"));
+        list.set(13, hexStringToByteArray("0501000000216D7F0D0004F800002A00000000006D7F0D00007000BEE39000"));
+        smartcard = new SmartCard(list);
+
+        assertEquals(1, smartcard.getRemainingRides());
+
+        //1 used ticket
+        list.set(2, hexStringToByteArray("05012110000000000000000000000000000000000000000000000000009000"));
+        list.set(11, hexStringToByteArray("0501000000216C9EF30004F800007400000000006C9EB100001000F66B9000"));
+        list.set(12, hexStringToByteArray("0501000000216C9EC80004F80003E700000000006C9EB100001000E9E29000"));
+        list.set(13, hexStringToByteArray("0501000000216C9EB10004F800007400000000006C9EB10000100098509000"));
         smartcard = new SmartCard(list);
 
         assertEquals(0, smartcard.getRemainingRides());
+
+
+        //1 used ticket
+        list.set(2, hexStringToByteArray("05012110000000000000000000000000000000000000000000000000009000"));
+        list.set(11, hexStringToByteArray("0501000000216C9EF30004F800007400000000006C9EB100001000F66B9000"));
+        list.set(12, hexStringToByteArray("00000000000000000000000000000000000000000000000000000000009000"));
+        list.set(13, hexStringToByteArray("00000000000000000000000000000000000000000000000000000000009000"));
+        smartcard = new SmartCard(list);
+
+        assertEquals(0, smartcard.getRemainingRides());
+
+
+        //expired subscriptions only
+        list.set(2, hexStringToByteArray("0501A10001000001A100000000000000000000000000000000000000009000"));
+        list.set(11, hexStringToByteArray("0501030258216C41130004F800007400000000006C355D0000300017D89000"));
+        list.set(12, hexStringToByteArray("0501030258216C3F8A0004F800000F00000000006C355D000030002EE19000"));
+        list.set(13, hexStringToByteArray("0501030258216C356A0004F800000A00000000006C355D000030007F249000"));
+        smartcard = new SmartCard(list);
+
+        assertEquals(false, smartcard.hasTickets());
     }
 }

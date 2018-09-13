@@ -136,6 +136,16 @@ public class MainActivity extends AppCompatActivity {
 
         onNewIntent(getIntent());
 
+        new LovelyInfoDialog(this)
+                .setTopColorRes(R.color.darkBlueGrey)
+                .setIcon(R.drawable.ic_info_outline_white_36dp)
+                //This will add Don't show again checkbox to the dialog. You can pass any ID as argument
+                .setNotShowAgainOptionEnabled(0)
+                .setNotShowAgainOptionChecked(false)
+                .setTitle("BETA")
+                .setMessage("Questa versione è una beta e potrebbe restituire risultati sbagliati. Segnalare per favore ogni incongruenza (insieme ad una copia del contenuto della carta) all'indirizzo email specificato nelle informazioni. Grazie.")
+                .show();
+
     }
 
     @Override
@@ -174,12 +184,12 @@ public class MainActivity extends AppCompatActivity {
                 //smartcard
                 if(dumplist.size() == 15) {
                     SmartCard smartcard = new SmartCard(dumplist);
-                    if(smartcard.isSubscription()) {
+                    if(smartcard.hasSubscriptions() && !smartcard.hasTickets()) {
                         dataLabel.setText(R.string.expire_date);
                         tipologia.setText(smartcard.getSubscriptionName());
-                        dataObliterazione.setText(smartcard.getDate());
+                        dataObliterazione.setText(smartcard.getExpireDate());
 
-                        if(smartcard.isExpired()) {
+                        if(smartcard.isSubscriptionExpired()) {
                             corseRimanenti.setText("0");
                             statoBiglietto.setText(R.string.expired);
                             statusImg.setImageResource(R.drawable.ic_error_grey_800_36dp);
@@ -195,8 +205,8 @@ public class MainActivity extends AppCompatActivity {
                         ticketCard.setVisibility(View.VISIBLE);
                         infoLabel.setText(R.string.read_another_ticket);
                         imageNfc.setVisibility(View.GONE);
-                    } else {
-                        createTicketInterface(smartcard.getName(),smartcard.getValidationDate(),
+                    } else if(smartcard.hasTickets()){
+                        createTicketInterface(smartcard.getTicketName(),smartcard.getValidationDate(),
                                 smartcard.getRemainingRides(), smartcard.getRemainingMinutes());
                         //Toast.makeText(getBaseContext(), R.string.smartcard_tickets_not_supported_yet, Toast.LENGTH_LONG).show();
 
@@ -206,7 +216,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 //chip on paper
                 else if(dumplist.size() > 15) {
-
                     ChipOnPaper chipOnPaper = new ChipOnPaper(dumplist);
                     createTicketInterface(chipOnPaper.getTypeName(),chipOnPaper.getDate(),
                                     chipOnPaper.getRemainingRides(), chipOnPaper.getRemainingMinutes());
@@ -222,6 +231,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception ex) {
                 Toast.makeText(getBaseContext(), R.string.unknown_error, Toast.LENGTH_LONG).show();
                 Log.d("card", ex.getMessage());
+				ex.printStackTrace();
             }
 
         }

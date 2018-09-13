@@ -1,5 +1,7 @@
 package org.dslul.ticketreader;
 
+import android.util.Log;
+
 import org.dslul.ticketreader.util.GttDate;
 
 import java.text.DateFormat;
@@ -11,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 import static java.lang.Math.abs;
-import static org.dslul.ticketreader.util.HelperFunctions.byteArrayToHexString;
 import static org.dslul.ticketreader.util.HelperFunctions.getBytesFromPage;
 
 
@@ -174,11 +175,10 @@ public class SmartCard {
     private Date validationDate;
     private Date creationDate;
     private Type type;
-    private List<Contract> contracts = new ArrayList<>();
-    private boolean isSubscription = false;
-    private Contract latestContract;
+    private List<Contract> tickets = new ArrayList<>();
+    private List<Contract> subscriptions = new ArrayList<>();
+    private Contract subscription;
 
-    private String subscriptionName;
     private int ridesLeft = 0;
     private long remainingMins;
 
@@ -201,40 +201,39 @@ public class SmartCard {
         else if(efEnvironment[28] == (byte)0xC2)
             type = Type.EDISU;
 
-        Date latestExpireDate = GttDate.getGttEpoch();
         for (int i = 0; i < 8; i++) {
             Contract contract = new Contract(dumplist.get(i+3));
 
             if(contract.isContract()) {
-                if(latestExpireDate.before(contract.getEndDate())) {
-                    latestExpireDate = contract.getEndDate();
-                    latestContract = contract;
-                }
                 if(contract.isSubscription()) {
-                    isSubscription = true;
-                    subscriptionName = contract.getTypeName();
-                    if(!isExpired(contract.getEndDate()))
-                        break;
+                    subscriptions.add(contract);
                 }
                 if(contract.isTicket()) {
-                    //ridesLeft += 1;
-                    if(isExpired(latestContract.getEndDate()))
-                        isSubscription = false;
-                    //TODO: count tickets in daily 7 carnets
+                    tickets.add(contract);
                 }
+            }
 
-                //isSubscription = contract.isSubscription();
+        }
 
-                contracts.add(contract);
+        //get a valid subscription, if there's any
+        Date latestExpireDate = GttDate.getGttEpoch();
+        for (Contract sub : subscriptions) {
+            if (latestExpireDate.before(sub.getEndDate())) {
+                latestExpireDate = sub.getEndDate();
+                subscription = sub;
             }
         }
+
 
         //actual tickets count
         ridesLeft = countTickets(efContractList, efEventLogs1, efEventLogs2, efEventLogs3);
 
-
         //get last validation time
         long mins = getBytesFromPage(efEventLogs1, 20, 3);
+        if(mins == 0)
+            mins = getBytesFromPage(efEventLogs2, 20, 3);
+        if(mins == 0)
+            mins = getBytesFromPage(efEventLogs3, 20, 3);
         validationDate = GttDate.addMinutesToDate(mins, GttDate.getGttEpoch());
         Calendar c = Calendar.getInstance();
         long diff = (c.getTime().getTime() - validationDate.getTime()) / 60000;
@@ -257,20 +256,22 @@ public class SmartCard {
             remainingMins = maxtime - diff;
         }
 
-
     }
 
     private int countTickets(byte[] contractsList, byte[] evLogs1, byte[] evLogs2, byte[] evLogs3) {
         int count = 0;
         for (int i = 2; i < 24; i+=3) {
-            int num = abs(contractsList[i+1]) >> 4;
-            //int used = contractsList[i+2];
-            if(num != 0 && num <= 8 && (contractsList[i]&0x0f) != 0) {
+            //int pos = abs(contractsList[i+1]) >> 4;
+            //real pos is given by the position in contractslist
+            int pos = i/3 + 1;
+            //check if it's a subscription
+            int sub = abs(contractsList[i]&0xf0) >> 4;
+            if(pos != 0 && pos <= 8 && (contractsList[i]&0x0f) != 0 && sub != 0xA) {
                 int lognum1 = abs(evLogs1[25]) >> 4;
                 int lognum2 = abs(evLogs2[25]) >> 4;
                 int lognum3 = abs(evLogs3[25]) >> 4;
                 //TODO: find out how to count multi daily 7 tickets
-                if(num != lognum1 && num != lognum2 && num != lognum3)
+                if(pos != lognum1 && pos != lognum2 && pos != lognum3)
                     count += 1;
             }
         }
@@ -278,17 +279,31 @@ public class SmartCard {
     }
 
 
-    public String getName() {
-        return type + " - " + latestContract.getTypeName();
+    public String getTicketName() {
+        if(hasTickets())
+            return type + " - " + tickets.get(0).getTypeName();
+        else
+            return "Invalid";
     }
 
     public String getSubscriptionName() {
-        return type + " - " + subscriptionName;
+        if(hasSubscriptions())
+            return type + " - " + subscription.getTypeName();
+        else
+            return "Invalid";
     }
 
-    public String getDate() {
+    public boolean hasTickets() {
+        return ridesLeft != 0;
+    }
+
+    public boolean hasSubscriptions() {
+        return subscriptions.size() != 0;
+    }
+
+    public String getExpireDate() {
         return DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT)
-                .format(latestContract.getEndDate());
+                .format(subscription.getEndDate());
     }
 
     public String getValidationDate() {
@@ -296,9 +311,9 @@ public class SmartCard {
                 .format(validationDate);
     }
 
-    public boolean isExpired() {
+    public boolean isSubscriptionExpired() {
         Calendar c = Calendar.getInstance();
-        return c.getTime().after(latestContract.getEndDate());
+        return c.getTime().after(subscription.getEndDate());
     }
 
     private boolean isExpired(Date date) {
@@ -314,9 +329,6 @@ public class SmartCard {
         return remainingMins;
     }
 
-    public boolean isSubscription() {
-        return isSubscription;
-    }
 
 
 }
