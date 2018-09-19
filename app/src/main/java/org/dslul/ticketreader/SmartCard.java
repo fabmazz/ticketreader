@@ -75,6 +75,7 @@ public class SmartCard {
         put(990, "Junior");
 
         put(993, "Annuale Formula U");
+        put(4001, "Settimanale Formula 4");
         put(4003, "Annuale Formula U a Zone");
 
     }};
@@ -95,9 +96,11 @@ public class SmartCard {
         private Date endDate;
 
         public Contract(byte[] data) {
+            int company = data[0];
             //get contract type
             code = ((data[4] & 0xff) << 8) | data[5] & 0xff;
-            if(code == 0) {
+            //support for GTT S.p.A. tickets only for now
+            if(code == 0 || company != 1) {
                 isValid = false;
             } else {
                 isValid = true;
@@ -227,7 +230,7 @@ public class SmartCard {
 
 
         //actual tickets count
-        ridesLeft = countTickets(validations, efContractList, efEventLogs1, efEventLogs2, efEventLogs3);
+        ridesLeft = countTickets(validations, efContractList);
 
         //get last validation time
         long mins = getBytesFromPage(efEventLogs1, 20, 3);
@@ -259,7 +262,7 @@ public class SmartCard {
 
     }
 
-    private int countTickets(byte[] validations, byte[] contractsList, byte[] evLogs1, byte[] evLogs2, byte[] evLogs3) {
+    private int countTickets(byte[] validations, byte[] contractsList) {
         int count = 0;
         for (int i = 2; i < 24; i+=3) {
             int valpos = abs(contractsList[i+1]) >> 4;
@@ -267,21 +270,7 @@ public class SmartCard {
             int pos = i/3 + 1;
             //check if it's a subscription
             int sub = abs(contractsList[i]&0xf0) >> 4;
-            if(pos != 0 && pos <= 8 && (contractsList[i]&0x0f) != 0 && sub != 0xA) {
-                /*
-                int logpos1 = abs(evLogs1[25]) >> 4;
-                int logpos2 = abs(evLogs2[25]) >> 4;
-                int logpos3 = abs(evLogs3[25]) >> 4;
-                //full multidaily
-                if(sub == 5) {
-                    count += 7;
-                }
-                //ignore all logs after a zeroed one
-                else if(logpos1 == 0 || (pos != logpos1 && pos != logpos2 && pos != logpos3)
-                        || (pos != logpos1 && logpos2 == 0)) {
-                    count += 1;
-                }
-                */
+            if(pos > 0 && pos <= 8 && (contractsList[i]&0x0f) != 0 && sub < 0xA) {
                 int rides = (abs(validations[valpos*3-3] & 0xff) >> 3);
                 count += rides;
             }
