@@ -12,7 +12,9 @@ import android.nfc.tech.IsoDep;
 import android.nfc.tech.NfcA;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
+import static org.dslul.ticketreader.util.HelperFunctions.byteArrayToHexString;
 import static org.dslul.ticketreader.util.HelperFunctions.hexStringToByteArray;
 
 
@@ -86,8 +88,8 @@ public class NfcThread extends Thread {
                 dumplist.add(isoDep.transceive(hexStringToByteArray("00B202441D")));
                 //efEventLogs3
                 dumplist.add(isoDep.transceive(hexStringToByteArray("00B203441D")));
-                //efCredit
-                dumplist.add(isoDep.transceive(hexStringToByteArray("007C000721")));
+                //efValidation
+                dumplist.add(isoDep.transceive(hexStringToByteArray("00B201CC1D")));
 
                 if(dumplist.size() == 15 && dumplist.get(1)[0] != 0) {
                     if(dumplist.get(2)[1] == 0) {

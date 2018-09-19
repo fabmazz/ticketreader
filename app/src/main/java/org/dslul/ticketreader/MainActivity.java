@@ -135,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
 		pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
         onNewIntent(getIntent());
-
+/*
         new LovelyInfoDialog(this)
                 .setTopColorRes(R.color.darkBlueGrey)
                 .setIcon(R.drawable.ic_info_outline_white_36dp)
@@ -145,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle("BETA")
                 .setMessage("Questa versione è una beta e potrebbe restituire risultati sbagliati. Segnalare per favore ogni incongruenza (insieme ad una copia del contenuto della carta) all'indirizzo email specificato nelle informazioni. Grazie.")
                 .show();
-
+*/
     }
 
     @Override
@@ -205,7 +205,8 @@ public class MainActivity extends AppCompatActivity {
                         ticketCard.setVisibility(View.VISIBLE);
                         infoLabel.setText(R.string.read_another_ticket);
                         imageNfc.setVisibility(View.GONE);
-                    } else if(smartcard.hasTickets()){
+                    } else {
+
                         createTicketInterface(smartcard.getTicketName(),smartcard.getValidationDate(),
                                 smartcard.getRemainingRides(), smartcard.getRemainingMinutes());
                         //Toast.makeText(getBaseContext(), R.string.smartcard_tickets_not_supported_yet, Toast.LENGTH_LONG).show();

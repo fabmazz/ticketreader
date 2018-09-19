@@ -189,6 +189,7 @@ public class SmartCard {
         byte[] efEventLogs1 = dumplist.get(11);
         byte[] efEventLogs2 = dumplist.get(12);
         byte[] efEventLogs3 = dumplist.get(13);
+        byte[] validations = dumplist.get(14);
 
         byte[] minutes = new byte[3];
         System.arraycopy(efEnvironment, 9, minutes, 0,  3);
@@ -226,7 +227,7 @@ public class SmartCard {
 
 
         //actual tickets count
-        ridesLeft = countTickets(efContractList, efEventLogs1, efEventLogs2, efEventLogs3);
+        ridesLeft = countTickets(validations, efContractList, efEventLogs1, efEventLogs2, efEventLogs3);
 
         //get last validation time
         long mins = getBytesFromPage(efEventLogs1, 20, 3);
@@ -258,21 +259,31 @@ public class SmartCard {
 
     }
 
-    private int countTickets(byte[] contractsList, byte[] evLogs1, byte[] evLogs2, byte[] evLogs3) {
+    private int countTickets(byte[] validations, byte[] contractsList, byte[] evLogs1, byte[] evLogs2, byte[] evLogs3) {
         int count = 0;
         for (int i = 2; i < 24; i+=3) {
-            //int pos = abs(contractsList[i+1]) >> 4;
-            //real pos is given by the position in contractslist
+            int valpos = abs(contractsList[i+1]) >> 4;
+            //position in contractslist
             int pos = i/3 + 1;
             //check if it's a subscription
             int sub = abs(contractsList[i]&0xf0) >> 4;
             if(pos != 0 && pos <= 8 && (contractsList[i]&0x0f) != 0 && sub != 0xA) {
-                int lognum1 = abs(evLogs1[25]) >> 4;
-                int lognum2 = abs(evLogs2[25]) >> 4;
-                int lognum3 = abs(evLogs3[25]) >> 4;
-                //TODO: find out how to count multi daily 7 tickets
-                if(pos != lognum1 && pos != lognum2 && pos != lognum3)
+                /*
+                int logpos1 = abs(evLogs1[25]) >> 4;
+                int logpos2 = abs(evLogs2[25]) >> 4;
+                int logpos3 = abs(evLogs3[25]) >> 4;
+                //full multidaily
+                if(sub == 5) {
+                    count += 7;
+                }
+                //ignore all logs after a zeroed one
+                else if(logpos1 == 0 || (pos != logpos1 && pos != logpos2 && pos != logpos3)
+                        || (pos != logpos1 && logpos2 == 0)) {
                     count += 1;
+                }
+                */
+                int rides = (abs(validations[valpos*3-3] & 0xff) >> 3);
+                count += rides;
             }
         }
         return count;
@@ -283,14 +294,14 @@ public class SmartCard {
         if(hasTickets())
             return type + " - " + tickets.get(0).getTypeName();
         else
-            return "Invalid";
+            return type.toString();
     }
 
     public String getSubscriptionName() {
         if(hasSubscriptions())
             return type + " - " + subscription.getTypeName();
         else
-            return "Invalid";
+            return type.toString();
     }
 
     public boolean hasTickets() {

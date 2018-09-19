@@ -6,8 +6,8 @@ android {
         applicationId "org.dslul.ticketreader"
         minSdkVersion 15
         targetSdkVersion 27
-        versionCode 16
-        versionName "2.0beta3"
+        versionCode 20
+        versionName "2.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }

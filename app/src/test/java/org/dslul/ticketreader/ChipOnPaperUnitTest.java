@@ -123,6 +123,15 @@ public class ChipOnPaperUnitTest {
 
         assertEquals(0, smartcard.getRemainingRides());
 
+        //1 full multidaily
+        list.set(2, hexStringToByteArray("0501A10001511001A100000000000000000000000000000000000000009000"));
+        list.set(11, hexStringToByteArray("0501030258216C41130004F800007400000000006C355D0000300017D89000"));
+        list.set(12, hexStringToByteArray("0501030258216C3F8A0004F800000F00000000006C355D000030002EE19000"));
+        list.set(13, hexStringToByteArray("0501030258216C356A0004F800000A00000000006C355D000030007F249000"));
+        smartcard = new SmartCard(list);
+
+        assertEquals(7, smartcard.getRemainingRides());
+
 
         //expired subscriptions only
         list.set(2, hexStringToByteArray("0501A10001000001A100000000000000000000000000000000000000009000"));
