@@ -1,5 +1,7 @@
 package org.dslul.ticketreader.util;
 
+import android.util.Log;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -30,14 +32,20 @@ public final class GttDate {
         return date;
     }
 
-    public static long getMinutesUntilMidnight() {
-        Calendar c = Calendar.getInstance();
-        c.add(Calendar.DAY_OF_MONTH, 1);
-        c.set(Calendar.HOUR_OF_DAY, 0);
-        c.set(Calendar.MINUTE, 0);
-        c.set(Calendar.SECOND, 0);
-        c.set(Calendar.MILLISECOND, 0);
-        return (int)(c.getTimeInMillis()-System.currentTimeMillis()/60000);
+    public static long getMinutesUntilEndOfService(Date startDate) {
+        Calendar curr = Calendar.getInstance();
+        Calendar after = Calendar.getInstance();
+        Calendar start = Calendar.getInstance();
+        start.setTime(startDate);
+        int dayoff = 0;
+        if(start.get(Calendar.DAY_OF_MONTH) == curr.get(Calendar.DAY_OF_MONTH))
+            dayoff = 1;
+        after.add(Calendar.DAY_OF_MONTH, dayoff);
+        after.set(Calendar.HOUR_OF_DAY, 3);
+        after.set(Calendar.MINUTE, 0);
+        after.set(Calendar.SECOND, 0);
+        after.set(Calendar.MILLISECOND, 0);
+        return (after.getTimeInMillis() - curr.getTimeInMillis())/60000;
 
     }
 

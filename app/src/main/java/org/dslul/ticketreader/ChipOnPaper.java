@@ -1,18 +1,11 @@
 package org.dslul.ticketreader;
 
-import android.util.Log;
-
 import org.dslul.ticketreader.util.GttDate;
-import org.dslul.ticketreader.util.HelperFunctions;
 
-import java.nio.ByteBuffer;
 import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.dslul.ticketreader.util.GttDate.addMinutesToDate;
 import static org.dslul.ticketreader.util.HelperFunctions.getBytesFromPage;
@@ -46,15 +39,17 @@ public class ChipOnPaper {
         if(type == 302 || type == 304) {
             maxtime = 100;
         }
-        //daily
-        if(type == 303 || type == 305) {
-            maxtime = GttDate.getMinutesUntilMidnight();
-        }
+
         //Tour TODO: make a distinction between the two types
         if(type == 704) {
             maxtime = 2*24*60;
         }
-        if(diff >= maxtime) {
+
+        //daily
+        if(type == 303 || type == 305) {
+            remainingMins = GttDate.getMinutesUntilEndOfService(date);
+        }
+        else if(diff >= maxtime) {
             remainingMins = 0;
         } else {
             remainingMins = maxtime - diff;
@@ -113,7 +108,10 @@ public class ChipOnPaper {
 
 
     public long getRemainingMinutes() {
-        return remainingMins;
+        if(remainingMins < 0)
+            return 0;
+        else
+            return remainingMins;
     }
 
 

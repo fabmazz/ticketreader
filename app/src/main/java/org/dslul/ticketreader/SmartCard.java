@@ -76,6 +76,7 @@ public class SmartCard {
 
         put(993, "Annuale Formula U");
         put(4001, "Settimanale Formula 4");
+        put(4002, "Mensile Formula 3 U+A");
         put(4003, "Annuale Formula U a Zone");
 
     }};
@@ -89,14 +90,16 @@ public class SmartCard {
 
     private class Contract {
         private int code;
+        private int counters;
         private boolean isValid;
         private boolean isTicket;
         private boolean isSubscription;
         private Date startDate;
         private Date endDate;
 
-        public Contract(byte[] data) {
+        public Contract(byte[] data, int counters) {
             int company = data[0];
+            this.counters = counters;
             //get contract type
             code = ((data[4] & 0xff) << 8) | data[5] & 0xff;
             //support for GTT S.p.A. tickets only for now
@@ -137,6 +140,13 @@ public class SmartCard {
             return startDate;
         }
 
+        public int getRides() {
+            if(code == 712 || code == 714)
+                return (((counters & 0x0000ff)&0x78) >> 3);
+            else
+                return (counters >> 19);
+        }
+
         public Date getEndDate() {
             return endDate;
         }
@@ -171,10 +181,6 @@ public class SmartCard {
     }
 
 
-
-
-    private byte[] efEnvironment;
-
     private Date validationDate;
     private Date creationDate;
     private Type type;
@@ -187,16 +193,13 @@ public class SmartCard {
 
 
     SmartCard(List<byte[]> dumplist) {
-        efEnvironment = dumplist.get(1);
+        byte[] selectApplication = dumplist.get(0);
+        byte[] efEnvironment = dumplist.get(1);
         byte[] efContractList = dumplist.get(2);
         byte[] efEventLogs1 = dumplist.get(11);
         byte[] efEventLogs2 = dumplist.get(12);
         byte[] efEventLogs3 = dumplist.get(13);
-        byte[] validations = dumplist.get(14);
-
-        byte[] minutes = new byte[3];
-        System.arraycopy(efEnvironment, 9, minutes, 0,  3);
-        creationDate = GttDate.decode(minutes);
+        byte[] efCounters = dumplist.get(14);
 
         if(efEnvironment[28] == (byte)0xC0)
             type = Type.BIP;
@@ -205,6 +208,38 @@ public class SmartCard {
         else if(efEnvironment[28] == (byte)0xC2)
             type = Type.EDISU;
 
+        byte[] minutes = new byte[3];
+        System.arraycopy(efEnvironment, 9, minutes, 0,  3);
+        creationDate = GttDate.decode(minutes);
+
+        //scan contractlist for tickets and subscriptions
+        for(int i = 1; i < 23; i+=3) {
+            //only GTT tickets atm
+            if(efContractList[i] == 1) {
+                //check validity
+                if((efContractList[i+1]&0x0f) == 1) {
+                    //position in counters
+                    int cpos = ((abs(efContractList[i+2]&0xff) >> 4)-1)*3;
+                    int counter = 0;
+                    if(cpos >= 0)
+                        counter = (efCounters[cpos+2] & 0xff) | ((efCounters[cpos+1] & 0xff) << 8)
+                                | ((efCounters[cpos] & 0xff) << 16);
+                    Log.d("card", String.valueOf(counter >> 19));
+                    Contract contract = new Contract(dumplist.get(i/3+1 + 2), counter);
+                    if(contract.isContract()) {
+                        if(contract.isSubscription()) {
+                            subscriptions.add(contract);
+                        }
+                        if(contract.isTicket()) {
+                            tickets.add(contract);
+                            ridesLeft += contract.getRides();
+                        }
+                    }
+                }
+            }
+        }
+
+        /*
         for (int i = 0; i < 8; i++) {
             Contract contract = new Contract(dumplist.get(i+3));
 
@@ -217,7 +252,7 @@ public class SmartCard {
                 }
             }
 
-        }
+        */
 
         //get a valid subscription, if there's any
         Date latestExpireDate = GttDate.getGttEpoch();
@@ -230,7 +265,7 @@ public class SmartCard {
 
 
         //actual tickets count
-        ridesLeft = countTickets(validations, efContractList);
+        //ridesLeft = countTickets(efCounters, efContractList);
 
         //get last validation time
         long mins = getBytesFromPage(efEventLogs1, 20, 3);
@@ -252,9 +287,9 @@ public class SmartCard {
         }
         //daily
         if(tickettype == 715 || tickettype == 716) {
-            maxtime = GttDate.getMinutesUntilMidnight();
+            remainingMins = GttDate.getMinutesUntilEndOfService(validationDate);
         }
-        if(diff >= maxtime) {
+        else if(diff >= maxtime) {
             remainingMins = 0;
         } else {
             remainingMins = maxtime - diff;
@@ -326,7 +361,10 @@ public class SmartCard {
     }
 
     public long getRemainingMinutes() {
-        return remainingMins;
+        if(remainingMins < 0)
+            return 0;
+        else
+            return remainingMins;
     }
 
 
