@@ -16,7 +16,7 @@
     <string name="nfc_disabled">NFC disabilitato. Attiva l\'NFC e premi il tasto indietro.</string>
     <string name="information">Informazioni</string>
     <string name="close_dialog">Chiudi</string>
-    <string name="html_info"><![CDATA[<p>Semplice applicazione opensource per visualizzare le corse rimanenti nei biglietti GTT.<br>Se riscontri problemi durante l\'utilizzo dell\'app, scrivimi a <a href="mailto:daniele.laudani@protonmail.com">questo indirizzo email</a>, incollando una copia del contenuto della carta (effettuata dal menu).</p><p><b><a href="https://github.com/dslul/ticketreader>Sito del progetto</a></b></p><br><p><b>Crediti:</b></p><p>Icone: Card Paypass by Viktor Vorobyev from the Noun Project; samsung galaxy by Setyo Ari Wibowo from the Noun Project</p>]]></string>
+    <string name="html_info"><![CDATA[<p>Semplice applicazione opensource per visualizzare le corse rimanenti nei biglietti GTT.<br>Se riscontri problemi durante l\'utilizzo dell\'app, scrivimi a <a href="mailto:daniele.laudani@protonmail.com">questo indirizzo email</a>, incollando una copia del contenuto della carta (effettuata dal menu).</p><p><b><a href="https://github.com/dslul/ticketreader>Sito del progetto</a></b></p><br><p><b>Riconoscimenti:</b></p><p>Icone: Card Paypass by Viktor Vorobyev from the Noun Project; samsung galaxy by Setyo Ari Wibowo from the Noun Project</p>]]></string>
     <string name="ticket_not_supported">Biglietto non valido!</string>
     <string name="ticket_correctly_read">Biglietto letto correttamente.</string>
     <string name="read_failure">Lettura fallita, riprovare</string>

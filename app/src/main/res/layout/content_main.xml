@@ -219,4 +219,9 @@
         ads:adSize="BANNER"
         ads:adUnitId="ca-app-pub-3940256099942544/6300978111" />
 
+    <!--
+    real 2102716674867426/2375937430
+    test 3940256099942544/6300978111
+    -->
+
 </RelativeLayout>
