@@ -90,23 +90,6 @@ public class NfcThread extends Thread {
                 dumplist.add(isoDep.transceive(hexStringToByteArray("00B203441D")));
                 //efValidation
                 dumplist.add(isoDep.transceive(hexStringToByteArray("00B201CC1D")));
-/*
-                dumplist.set(0, hexStringToByteArray("6F28840E315449432E494341D38012009101A516BF0C13C70800000000380712F45307062C23C00002019000"));
-                dumplist.set(1, hexStringToByteArray("0501030D1E7B2000026C5AAC434C4D4C534E3630433231473232344BC09000"));
-                dumplist.set(2, hexStringToByteArray("05012110012120012130012140012150000000000000000000000000009000"));
-                dumplist.set(3, hexStringToByteArray("0105000002C800000093CEBB83BEDCFFAE10AC64014437A0005485E4479000"));
-                dumplist.set(4, hexStringToByteArray("0105000002CA00000091B85B81AE1CFFAE10AA0C002857A000E0E8BAA89000"));
-                dumplist.set(5, hexStringToByteArray("0105000002CA00000091B85B81AE1CFFAE10AA0C002858A000292F7D039000"));
-                dumplist.set(6, hexStringToByteArray("0105000002CA00000091B85B81AE1CFFAE10AA0C002859A000051117559000"));
-                dumplist.set(7, hexStringToByteArray("0105000002CA00000091B85B81AE1CFFAE10AA0C00285AA000FBDD7F709000"));
-                dumplist.set(8, hexStringToByteArray("00000000000000000000000000000000000000000000000000000000009000"));
-                dumplist.set(9, hexStringToByteArray("00000000000000000000000000000000000000000000000000000000009000"));
-                dumplist.set(10,hexStringToByteArray("00000000000000000000000000000000000000000000000000000000009000"));
-                dumplist.set(11,hexStringToByteArray("00000000000000000000000000000000000000000000000000000000009000"));
-                dumplist.set(12,hexStringToByteArray("00000000000000000000000000000000000000000000000000000000009000"));
-                dumplist.set(13,hexStringToByteArray("00000000000000000000000000000000000000000000000000000000009000"));
-                dumplist.set(14,hexStringToByteArray("00000900000900000900000900000900000000000000000000000000009000"));
-*/
 
                 if(dumplist.size() == 15 && dumplist.get(1)[0] != 0) {
                     if(dumplist.get(2)[1] == 0) {

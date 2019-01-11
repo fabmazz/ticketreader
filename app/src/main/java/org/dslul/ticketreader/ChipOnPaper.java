@@ -1,5 +1,7 @@
 package org.dslul.ticketreader;
 
+import android.util.Log;
+
 import org.dslul.ticketreader.util.GttDate;
 
 import java.text.DateFormat;
@@ -34,9 +36,10 @@ public class ChipOnPaper {
         //calcola minuti rimanenti
         Calendar c = Calendar.getInstance();
         long diff = (c.getTime().getTime() - date.getTime()) / 60000;
+
         long maxtime = 90;
         //city 100
-        if(type == 302 || type == 304) {
+        if(type == 302 || type == 304 || type == 650) {
             maxtime = 100;
         }
 
@@ -77,6 +80,8 @@ public class ChipOnPaper {
             case 303:
             case 305:
                 return "Daily";
+            case 650:
+                return "MultiCity";
             case 704:
                 return "Tour";
             case 301:

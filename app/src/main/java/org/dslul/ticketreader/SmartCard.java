@@ -24,7 +24,7 @@ public class SmartCard {
         EDISU
     }
 
-    static final Map<Integer, String> subscriptionCodes = new HashMap<Integer, String>() {{
+    private static final Map<Integer, String> subscriptionCodes = new HashMap<Integer, String>() {{
         put(68, "Mensile UNDER 26");
         put(72, "Mensile Studenti Rete Urbana");
 
@@ -81,7 +81,7 @@ public class SmartCard {
 
     }};
 
-    static final Map<Integer, String> ticketCodes = new HashMap<Integer, String>() {{
+    private static final Map<Integer, String> ticketCodes = new HashMap<Integer, String>() {{
         put(712, "Ordinario Urbano");
         put(714, "City 100");
         put(715, "Daily");
@@ -97,7 +97,7 @@ public class SmartCard {
         private Date startDate;
         private Date endDate;
 
-        public Contract(byte[] data, int counters) {
+        Contract(byte[] data, int counters) {
             int company = data[0];
             this.counters = counters;
             //get contract type
@@ -140,36 +140,30 @@ public class SmartCard {
             return startDate;
         }
 
-        public int getRides() {
+        int getRides() {
             if(code == 712 || code == 714)
                 return (((counters & 0x0000ff)&0x78) >> 3);
             else
                 return (counters >> 19);
         }
 
-        public Date getEndDate() {
+        Date getEndDate() {
             return endDate;
         }
 
-        public boolean isContract() {
+        boolean isContract() {
             return isValid;
         }
 
-        public boolean isSubscription() {
-            if(isSubscription)
-                return true;
-            else
-                return false;
+        boolean isSubscription() {
+            return isSubscription;
         }
 
-        public boolean isTicket() {
-            if(isTicket)
-                return true;
-            else
-                return false;
+        boolean isTicket() {
+            return isTicket;
         }
 
-        public String getTypeName() {
+        String getTypeName() {
             if(isTicket)
                 return ticketCodes.get(code);
             else if(isSubscription)
@@ -224,7 +218,6 @@ public class SmartCard {
                     if(cpos >= 0)
                         counter = (efCounters[cpos+2] & 0xff) | ((efCounters[cpos+1] & 0xff) << 8)
                                 | ((efCounters[cpos] & 0xff) << 16);
-                    Log.d("card", String.valueOf(counter >> 19));
                     Contract contract = new Contract(dumplist.get(i/3+1 + 2), counter);
                     if(contract.isContract()) {
                         if(contract.isSubscription()) {
@@ -239,21 +232,6 @@ public class SmartCard {
             }
         }
 
-        /*
-        for (int i = 0; i < 8; i++) {
-            Contract contract = new Contract(dumplist.get(i+3));
-
-            if(contract.isContract()) {
-                if(contract.isSubscription()) {
-                    subscriptions.add(contract);
-                }
-                if(contract.isTicket()) {
-                    tickets.add(contract);
-                }
-            }
-
-        */
-
         //get a valid subscription, if there's any
         Date latestExpireDate = GttDate.getGttEpoch();
         for (Contract sub : subscriptions) {
@@ -263,9 +241,6 @@ public class SmartCard {
             }
         }
 
-
-        //actual tickets count
-        //ridesLeft = countTickets(efCounters, efContractList);
 
         //get last validation time
         long mins = getBytesFromPage(efEventLogs1, 20, 3);
@@ -297,22 +272,6 @@ public class SmartCard {
 
     }
 
-    private int countTickets(byte[] validations, byte[] contractsList) {
-        int count = 0;
-        for (int i = 2; i < 24; i+=3) {
-            int valpos = abs(contractsList[i+1]) >> 4;
-            //position in contractslist
-            int pos = i/3 + 1;
-            //check if it's a subscription
-            int sub = abs(contractsList[i]&0xf0) >> 4;
-            if(pos > 0 && pos <= 8 && (contractsList[i]&0x0f) != 0 && sub < 0xA) {
-                int rides = (abs(validations[valpos*3-3] & 0xff) >> 3);
-                count += rides;
-            }
-        }
-        return count;
-    }
-
 
     public String getTicketName() {
         if(hasTickets())
@@ -329,7 +288,7 @@ public class SmartCard {
     }
 
     public boolean hasTickets() {
-        return ridesLeft != 0;
+        return ridesLeft != 0 || remainingMins > 0;
     }
 
     public boolean hasSubscriptions() {
