@@ -4,10 +4,13 @@ import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.ComponentName;
+import android.content.SharedPreferences;
 import android.nfc.tech.IsoDep;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
@@ -16,6 +19,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.content.pm.PackageManager;
 
 import android.widget.ImageView;
 import android.widget.TableLayout;
@@ -98,6 +102,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         adview = (AdView) findViewById(R.id.adView);
         imageNfc = (ImageView) findViewById(R.id.imagenfcView);
@@ -348,6 +354,12 @@ public class MainActivity extends AppCompatActivity {
                     .setTitle("Info")
                     .setView(view)
                     .show();
+            return true;
+        }
+
+        if (id == R.id.action_settings) {
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
             return true;
         }
 

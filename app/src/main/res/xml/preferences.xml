@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <android.support.v7.preference.SwitchPreferenceCompat
+        android:defaultValue="true"
+        android:key="switch_autostart"
+        android:summary="@string/turn_off_auto_start_settings"
+        android:title="@string/automatically_open" />
+</PreferenceScreen>

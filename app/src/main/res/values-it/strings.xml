@@ -34,4 +34,7 @@
     <string name="content_copied">Contenuto copiato negli appunti</string>
     <string name="no_content">Scansiona un biglietto prima di effettuare la copia del contenuto</string>
     <string name="smartcard_empty">Tessera vuota!</string>
+    <string name="settings">Impostazioni</string>
+    <string name="turn_off_auto_start_settings">Disattiva se non vuoi che Android apra automaticamente l\'app quando viene avvicinato un biglietto</string>
+    <string name="automatically_open">Apertura automatica</string>
 </resources>

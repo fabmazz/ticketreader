@@ -33,4 +33,9 @@
     <string name="content_copied">Content successfully copied to clipboard</string>
     <string name="no_content">No content to copy. Scan a ticket first</string>
     <string name="smartcard_empty">This smartcard is still empty!</string>
+
+    <string name="settings">Settings</string>
+    <string name="turn_off_auto_start_settings">Turn off if you don\'t want Android to start the app when a tag is scanned</string>
+    <string name="automatically_open">Automatically open</string>
+
 </resources>
