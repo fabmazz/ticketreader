@@ -39,7 +39,7 @@ public class ChipOnPaper {
 
         long maxtime = 90;
         //city 100
-        if(type == 302 || type == 304 || type == 650) {
+        if(type == 302 || type == 304 || type == 650 || type == 651) {
             maxtime = 100;
         }
 
@@ -81,6 +81,7 @@ public class ChipOnPaper {
             case 305:
                 return "Daily";
             case 650:
+            case 651:
                 return "MultiCity";
             case 704:
                 return "Tour";
