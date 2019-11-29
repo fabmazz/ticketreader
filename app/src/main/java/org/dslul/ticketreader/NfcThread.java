@@ -91,12 +91,13 @@ public class NfcThread extends Thread {
                 //efValidation
                 dumplist.add(isoDep.transceive(hexStringToByteArray("00B201CC1D")));
 
+                setContentBuffer(dumplist);
+
                 if(dumplist.size() == 15 && dumplist.get(1)[0] != 0) {
                     if(dumplist.get(2)[1] == 0) {
                         showToastLong(context.getString(R.string.smartcard_empty));
                         return;
                     }
-                    setContentBuffer(dumplist);
                     showToastLong(context.getString(R.string.smartcard_read_correctly));
                 } else {
                     showToastLong(context.getString(R.string.invalid_smartcard));
@@ -105,6 +106,7 @@ public class NfcThread extends Thread {
                 isoDep.close();
 
             } catch (IOException e) {
+                setContentBuffer(new ArrayList<byte[]>());
                 showToastLong(context.getString(R.string.read_failure));
             }
         }
@@ -116,6 +118,7 @@ public class NfcThread extends Thread {
         final NfcA mfu = NfcA.get(tagFromIntent);
 
         if (mfu == null) {
+            setContentBuffer(new ArrayList<byte[]>());
             showToastLong(context.getString(R.string.ticket_not_supported));
             return;
         }
@@ -123,6 +126,7 @@ public class NfcThread extends Thread {
         byte[] ATQA = mfu.getAtqa();
 
         if (mfu.getSak() != 0x00 || ATQA.length != 2 || ATQA[0] != 0x44 || ATQA[1] != 0x00) {
+            setContentBuffer(new ArrayList<byte[]>());
             showToastLong(context.getString(R.string.ticket_not_supported));
             return;
         }
@@ -141,18 +145,20 @@ public class NfcThread extends Thread {
                 dumplist.add(mfuPage);
             }
 
+            setContentBuffer(dumplist);
             if(pagesRead >= 16) {
                 showToastShort(context.getString(R.string.ticket_correctly_read));
-                setContentBuffer(dumplist);
             } else {
                 throw new RuntimeException(context.getString(R.string.read_failure));
             }
 
         }
         catch (RuntimeException e) {
+            setContentBuffer(new ArrayList<byte[]>());
             showToastLong(context.getString(R.string.read_failure));
         }
         catch (Exception e) {
+            setContentBuffer(new ArrayList<byte[]>());
             showToastLong(context.getString(R.string.communication_error));
         }
     }

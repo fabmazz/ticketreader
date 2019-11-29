@@ -4,22 +4,19 @@ import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.content.ComponentName;
-import android.content.SharedPreferences;
 import android.nfc.tech.IsoDep;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.preference.PreferenceManager;
-import android.support.v7.widget.CardView;
-import android.support.v7.widget.Toolbar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.preference.PreferenceManager;
+import androidx.cardview.widget.CardView;
+import androidx.appcompat.widget.Toolbar;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.content.pm.PackageManager;
 
 import android.widget.ImageView;
 import android.widget.TableLayout;
@@ -27,7 +24,6 @@ import android.widget.TextView;
 
 import java.util.Calendar;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import android.nfc.NfcAdapter;
 import android.nfc.tech.NfcA;
@@ -49,11 +45,13 @@ import android.content.DialogInterface;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 import com.yarolegovich.lovelydialog.LovelyCustomDialog;
-import com.yarolegovich.lovelydialog.LovelyInfoDialog;
-import com.yarolegovich.lovelydialog.LovelyStandardDialog;
 
 import org.dslul.ticketreader.util.HelperFunctions;
+
+import static org.dslul.ticketreader.util.HelperFunctions.millisToString;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -99,6 +97,25 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //initialize NFC first
+        mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
+        if (mNfcAdapter == null) {
+            Toast.makeText(this, R.string.nfc_not_supported, Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+        if (!mNfcAdapter.isEnabled()) {
+            Toast.makeText(this, R.string.nfc_disabled, Toast.LENGTH_LONG).show();
+            startActivity(new Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS));
+        }
+        tech = new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED);
+        intentFiltersArray = new IntentFilter[] {tech};
+        intent = new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        //FLAG_ACTIVITY_REORDER_TO_FRONT FLAG_RECEIVER_REPLACE_PENDING
+        pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+
+        onNewIntent(getIntent());
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -118,29 +135,15 @@ public class MainActivity extends AppCompatActivity {
         dataObliterazione = (TextView) findViewById(R.id.data_obliterazione);
         corseRimanenti = (TextView) findViewById(R.id.corse_rimaste);
 
-        MobileAds.initialize(this, "ca-app-pub-2102716674867426~1964394961");
+
+
+        MobileAds.initialize(this, new OnInitializationCompleteListener() {
+            @Override
+            public void onInitializationComplete(InitializationStatus initializationStatus) {
+            }
+        });
         AdRequest adRequest = new AdRequest.Builder().build();
         adview.loadAd(adRequest);
-
-        mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
-		if (mNfcAdapter == null) {
-			Toast.makeText(this, R.string.nfc_not_supported, Toast.LENGTH_LONG).show();
-			finish();
-			return;
-		}
-
-		if (!mNfcAdapter.isEnabled()) {
-			Toast.makeText(this, R.string.nfc_disabled, Toast.LENGTH_LONG).show();
-	        startActivity(new Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS));
-		}
-
-		tech = new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED);
-		intentFiltersArray = new IntentFilter[] {tech};
-		intent = new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-		//FLAG_ACTIVITY_REORDER_TO_FRONT FLAG_RECEIVER_REPLACE_PENDING
-		pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-
-        onNewIntent(getIntent());
 /*
         new LovelyInfoDialog(this)
                 .setTopColorRes(R.color.darkBlueGrey)
@@ -170,11 +173,12 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onNewIntent(Intent intent) {
-		if (intent.getAction().equals(NfcAdapter.ACTION_TECH_DISCOVERED)) {
+        super.onNewIntent(intent);
+        if (intent.getAction().equals(NfcAdapter.ACTION_TECH_DISCOVERED)) {
 
-			NfcThread nfcThread = new NfcThread(getBaseContext(), intent, mContentHandler, mToastShortHandler, mToastLongHandler, mShowInfoDialogHandler);
-			nfcThread.start();
-		}
+            NfcThread nfcThread = new NfcThread(getBaseContext(), intent, mContentHandler, mToastShortHandler, mToastLongHandler, mShowInfoDialogHandler);
+            nfcThread.start();
+        }
     }
 
 	@SuppressLint("HandlerLeak")
@@ -261,10 +265,8 @@ public class MainActivity extends AppCompatActivity {
 			timer = new CountDownTimer((remainingMinutes*60 - sec)*1000, 1000) {
 
 				public void onTick(long millis) {
-					statoBiglietto.setText(String.format(getResources().getString(R.string.in_corso),
-							TimeUnit.MILLISECONDS.toMinutes(millis),
-							TimeUnit.MILLISECONDS.toSeconds(millis) -
-									TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis))));
+					statoBiglietto.setText(String.format("%s %s",
+                            getResources().getString(R.string.in_corso), millisToString(millis)));
 				}
 
 				public void onFinish() {

@@ -22,8 +22,6 @@ public class ChipOnPaper {
 
     ChipOnPaper(List<byte[]> dumplist) {
 
-        dumplist = dumplist;
-
         type = (int)getBytesFromPage(dumplist.get(5), 2, 2);
 
         long minutes = getBytesFromPage(dumplist.get(10), 0, 3);
@@ -43,9 +41,13 @@ public class ChipOnPaper {
             maxtime = 100;
         }
 
-        //Tour TODO: make a distinction between the two types
-        if(type == 704) {
+        //Tour 2 giorni
+        if(type == 288) {
             maxtime = 2*24*60;
+        }
+        //Tour 3 giorni
+        if(type == 289) {
+            maxtime = 3*24*60;
         }
 
         //daily
@@ -83,8 +85,10 @@ public class ChipOnPaper {
             case 650:
             case 651:
                 return "MultiCity";
-            case 704:
-                return "Tour";
+            case 288:
+                return "Tour 2 giorni";
+            case 289:
+                return "Tour 3 giorni";
             case 301:
                 return "Multicorsa extraurbano";
             case 702:
