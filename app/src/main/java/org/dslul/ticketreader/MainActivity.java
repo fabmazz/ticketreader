@@ -137,13 +137,15 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        MobileAds.initialize(this, new OnInitializationCompleteListener() {
-            @Override
-            public void onInitializationComplete(InitializationStatus initializationStatus) {
-            }
-        });
-        AdRequest adRequest = new AdRequest.Builder().build();
-        adview.loadAd(adRequest);
+        if(!BuildConfig.DEBUG) {
+            MobileAds.initialize(this, new OnInitializationCompleteListener() {
+                @Override
+                public void onInitializationComplete(InitializationStatus initializationStatus) {
+                }
+            });
+            AdRequest adRequest = new AdRequest.Builder().build();
+            adview.loadAd(adRequest);
+        }
 /*
         new LovelyInfoDialog(this)
                 .setTopColorRes(R.color.darkBlueGrey)
@@ -283,7 +285,10 @@ public class MainActivity extends AppCompatActivity {
 			statusImg.setImageResource(R.drawable.ic_error_grey_800_36dp);
 			statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorRed));
 		} else if(remainingRides != 0 && remainingMinutes == 0) {
-			statoBiglietto.setText(String.format(getResources().getString(R.string.corse_disponibili), remainingRides));
+		    if(remainingRides == 1)
+                statoBiglietto.setText(String.format(getResources().getString(R.string.corse_disponibili_singolare), remainingRides));
+		    else
+			    statoBiglietto.setText(String.format(getResources().getString(R.string.corse_disponibili), remainingRides));
 			statusImg.setImageResource(R.drawable.ic_check_circle_grey_800_36dp);
 			statusCard.setCardBackgroundColor(getResources().getColor(R.color.colorGreen));
 		}

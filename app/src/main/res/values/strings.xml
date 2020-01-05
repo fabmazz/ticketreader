@@ -8,6 +8,7 @@
     <string name="immagine_biglietto_nfc">NFC ticket image</string>
     <string name="read_another_ticket">To read another ticket, move it close to the NFC sensor again</string>
     <string name="corse_disponibili">%d trips available</string>
+    <string name="corse_disponibili_singolare">%d trips available</string>
     <string name="in_corso">In progress</string>
     <string name="corse_esaurite">Trips exhausted</string>
     <string name="dettagli_biglietto">Ticket info</string>

@@ -9,6 +9,7 @@
     <string name="immagine_biglietto_nfc">Immagine biglietto nfc</string>
     <string name="read_another_ticket">Per leggere un altro biglietto, avvicinalo nuovamente al sensore NFC</string>
     <string name="corse_disponibili">%d corse disponibili</string>
+    <string name="corse_disponibili_singolare">%d corsa disponibile</string>
     <string name="in_corso">In corso</string>
     <string name="corse_esaurite">Corse esaurite</string>
     <string name="dettagli_biglietto">Dettagli biglietto</string>
