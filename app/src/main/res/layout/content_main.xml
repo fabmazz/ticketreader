@@ -47,6 +47,7 @@
                     android:text="@string/info_instructions"
                     android:textColor="@color/colorGreyText"
                     android:textAlignment="center"
+                    android:gravity="center"
                     android:textSize="17sp"
                     android:textStyle="bold" />
 
