@@ -42,11 +42,6 @@ import android.app.AlertDialog;
 
 import android.content.DialogInterface;
 
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.MobileAds;
-import com.google.android.gms.ads.initialization.InitializationStatus;
-import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 import com.yarolegovich.lovelydialog.LovelyCustomDialog;
 
 import org.dslul.ticketreader.util.HelperFunctions;
@@ -65,7 +60,6 @@ public class MainActivity extends AppCompatActivity {
 
 	private Toast currentToast;
 
-    private AdView adview;
     private ImageView imageNfc;
     private CardView ticketCard;
     private CardView statusCard;
@@ -112,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
         intentFiltersArray = new IntentFilter[] {tech};
         intent = new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         //FLAG_ACTIVITY_REORDER_TO_FRONT FLAG_RECEIVER_REPLACE_PENDING
-        pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+        pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE);
 
         onNewIntent(getIntent());
 
@@ -122,7 +116,6 @@ public class MainActivity extends AppCompatActivity {
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
-        adview = (AdView) findViewById(R.id.adView);
         imageNfc = (ImageView) findViewById(R.id.imagenfcView);
         ticketCard = (CardView) findViewById(R.id.ticketCardView);
         statusCard = (CardView) findViewById(R.id.statusCardView);
@@ -135,17 +128,6 @@ public class MainActivity extends AppCompatActivity {
         dataObliterazione = (TextView) findViewById(R.id.data_obliterazione);
         corseRimanenti = (TextView) findViewById(R.id.corse_rimaste);
 
-
-
-        if(!BuildConfig.DEBUG) {
-            MobileAds.initialize(this, new OnInitializationCompleteListener() {
-                @Override
-                public void onInitializationComplete(InitializationStatus initializationStatus) {
-                }
-            });
-            AdRequest adRequest = new AdRequest.Builder().build();
-            adview.loadAd(adRequest);
-        }
 /*
         new LovelyInfoDialog(this)
                 .setTopColorRes(R.color.darkBlueGrey)

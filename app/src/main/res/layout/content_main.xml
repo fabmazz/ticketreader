@@ -102,7 +102,7 @@
         android:layout_height="wrap_content"
         card_view:cardCornerRadius="3dp"
         android:visibility="gone"
-        android:layout_above="@id/adView"
+        android:layout_centerInParent="true"
         card_view:cardElevation="4dp"
         card_view:cardBackgroundColor="@android:color/white"
         card_view:cardUseCompatPadding="true">
@@ -208,18 +208,6 @@
         </LinearLayout>
 
     </androidx.cardview.widget.CardView>
-
-
-    <com.google.android.gms.ads.AdView
-        xmlns:ads="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/adView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_alignParentBottom="true"
-        ads:adSize="BANNER"
-        ads:adUnitId="ca-app-pub-2102716674867426/2375937430">
-    </com.google.android.gms.ads.AdView>
 
     <!--
     real 2102716674867426/2375937430
