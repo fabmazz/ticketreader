@@ -36,8 +36,8 @@ public class ChipOnPaper {
         long diff = (c.getTime().getTime() - date.getTime()) / 60000;
 
         long maxtime = 90;
-        //city 100
-        if(type == 302 || type == 304 || type == 650 || type == 651) {
+        //city 100 e multicity
+        if(type == 302 || type == 304 ||  type == 375 || type == 650 || type == 651 || type == 658) {
             maxtime = 100;
         }
 
@@ -51,7 +51,7 @@ public class ChipOnPaper {
         }
 
         //daily
-        if(type == 303 || type == 305) {
+        if(type == 303 || type == 305 || type == 376) {
             remainingMins = GttDate.getMinutesUntilEndOfService(date);
         }
         else if(diff >= maxtime) {
@@ -79,11 +79,15 @@ public class ChipOnPaper {
             case 302:
             case 304:
                 return "City 100";
+            case 375:
+                return "City 100 (U + S)";
             case 303:
             case 305:
+            case 376:
                 return "Daily";
             case 650:
             case 651:
+            case 658:
                 return "MultiCity";
             case 288:
                 return "Tour 2 giorni";
@@ -102,7 +106,7 @@ public class ChipOnPaper {
             case 9521:
                 return "Sadem Aeroporto Torino";
             default:
-                return "Non riconosciuto";
+                return "Non riconosciuto (codice: "+type+")";
         }
     }
 
